@@ -1,0 +1,3 @@
+"use client";
+import { useState } from "react";
+export function LoadMoreButton({ hasMore, onLoadMore }: { hasMore: boolean; onLoadMore: () => Promise<void> }) { const [loading, setLoading] = useState(false); if (!hasMore) return null; async function click() { setLoading(true); try { await onLoadMore(); } finally { setLoading(false); } } return <button type="button" disabled={loading} onClick={click} className="border-2 border-black px-7 py-4 font-epilogue text-sm font-bold uppercase tracking-[.12em] transition-colors hover:bg-black hover:text-white disabled:opacity-60">{loading ? "Cargando..." : "Ver más artículos"}</button>; }
