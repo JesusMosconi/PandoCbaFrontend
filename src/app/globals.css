@@ -24,3 +24,25 @@ body {
 .font-manrope {
   font-family: var(--font-manrope), sans-serif;
 }
+
+.category-collage {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, 400px);
+  grid-template-areas:
+    "buzos drop drop"
+    "buzos pantalones pantalones"
+    "remeras remeras zapatillas";
+}
+
+.buzos { grid-area: buzos; border-right: 2px solid #000; border-bottom: 2px solid #000; }
+.drop { grid-area: drop; border-bottom: 2px solid #000; }
+.pantalones { grid-area: pantalones; border-bottom: 2px solid #000; }
+.remeras { grid-area: remeras; border-right: 2px solid #000; }
+.zapatillas { grid-area: zapatillas; }
+
+@media (max-width: 767px) {
+  .category-collage { display: flex; flex-direction: column; }
+  .category-collage > * { border-right: 0; border-bottom: 2px solid #000; }
+  .category-collage > *:last-child { border-bottom: 0; }
+}
