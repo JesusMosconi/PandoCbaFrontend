@@ -5,6 +5,8 @@ import { apiFetch } from "@/lib/api";
 import type { Categoria } from "@/types/categoria";
 import type { Coleccion } from "@/types/coleccion";
 
+export const dynamic = "force-dynamic";
+
 const categoryTiles = [
   { name: "Buzos", area: "buzos" },
   { name: "Remeras", area: "remeras" },

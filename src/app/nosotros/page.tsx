@@ -1,4 +1,8 @@
 import NewsletterForm from "@/components/NewsletterForm";
+import { apiFetch } from "@/lib/api";
+import type { ImagenNosotros } from "@/types/imagen-nosotros";
+
+export const dynamic = "force-dynamic";
 
 const processCards = [
   {
@@ -15,11 +19,28 @@ const processCards = [
   },
 ];
 
-export default function NosotrosPage() {
+export default async function NosotrosPage() {
+  let imagenes: ImagenNosotros[] = [];
+
+  try {
+    imagenes = await apiFetch<ImagenNosotros[]>("/imagenes-nosotros");
+  } catch {
+    // La página mantiene sus fondos neutros si las imágenes todavía no están configuradas.
+  }
+
+  const imagenPrincipal = imagenes.find((imagen) => imagen.clave === "principal")?.imagenUrl;
+  const imagenesProceso = processCards.map(
+    (_, index) => imagenes.find((imagen) => imagen.clave === `proceso-${index + 1}`)?.imagenUrl
+  );
+
   return (
     <div>
-      <section className="flex min-h-[620px] items-center justify-center bg-neutral-800 px-6 text-center text-white md:h-[870px] md:min-h-0 md:px-16">
-        <div className="flex flex-col items-center gap-4">
+      <section
+        className="relative flex min-h-[620px] items-center justify-center overflow-hidden bg-neutral-800 bg-cover bg-center px-6 text-center text-white md:h-[870px] md:min-h-0 md:px-16"
+        style={imagenPrincipal ? { backgroundImage: `url(${imagenPrincipal})` } : undefined}
+      >
+        {imagenPrincipal && <div className="absolute inset-0 bg-black/40" />}
+        <div className="relative flex flex-col items-center gap-4">
           <h1 className="font-epilogue text-5xl font-bold uppercase leading-none tracking-[-0.04em] md:text-[80px] md:leading-[80px]">NOSOTROS</h1>
           <p className="font-manrope text-xs font-bold uppercase tracking-[0.4em] text-white/80">DESDE 2023 — PANDO CBA</p>
         </div>
@@ -45,7 +66,15 @@ export default function NosotrosPage() {
         <div className="mt-12 grid gap-8 md:grid-cols-3">
           {processCards.map((card, index) => (
             <article key={card.heading} className={index === 1 ? "md:mt-24" : undefined}>
-              <div className="aspect-[362.67/483.53] bg-[#E4E4E7]" aria-hidden="true" />
+              <div className="aspect-[362.67/483.53] overflow-hidden bg-[#E4E4E7]">
+                {imagenesProceso[index] && (
+                  <img
+                    src={imagenesProceso[index]}
+                    alt={card.heading}
+                    className="h-full w-full object-cover"
+                  />
+                )}
+              </div>
               {/* TODO: confirmar si este heading debe ser distinto al de la sección */}
               <h4 className="pt-3 font-manrope text-xs font-bold uppercase tracking-[0.1em] text-[#1A1C1C]">{card.heading}</h4>
               <p className="mt-2 text-sm leading-5 text-[#71717A]">{card.text}</p>

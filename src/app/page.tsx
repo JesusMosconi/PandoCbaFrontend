@@ -7,6 +7,8 @@ import type { CatalogoInicioItem } from "@/types/catalogo-inicio";
 import type { Coleccion } from "@/types/coleccion";
 import type { ContenidoInicio } from "@/types/contenido-inicio";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   let colecciones: Coleccion[] = [];
   let contenidos: ContenidoInicio[] = [];
