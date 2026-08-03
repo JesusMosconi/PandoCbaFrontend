@@ -19,6 +19,13 @@ type Props = {
 
 type Mensaje = { tipo: "ok" | "error"; texto: string };
 
+type ImagenProducto = {
+  id: number;
+  url: string;
+  orden: number;
+  productoId: number;
+};
+
 type ProductoForm = {
   nombre: string;
   descripcion: string;
@@ -64,6 +71,8 @@ export default function AdminProductos({
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [productoForm, setProductoForm] = useState<ProductoForm>(formVacio);
   const [expandidoId, setExpandidoId] = useState<number | null>(null);
+  const [imagenesExpandidoId, setImagenesExpandidoId] = useState<number | null>(null);
+  const [imagenesPorProducto, setImagenesPorProducto] = useState<Record<number, ImagenProducto[]>>({});
   const [mensajes, setMensajes] = useState<Record<string, Mensaje>>({});
   const [procesando, setProcesando] = useState<string | null>(null);
   const [talleEditandoId, setTalleEditandoId] = useState<number | null>(null);
@@ -160,6 +169,95 @@ export default function AdminProductos({
       mostrarMensaje(clave, {
         tipo: "error",
         texto: error instanceof Error ? error.message : "No se pudo desactivar el producto.",
+      });
+    } finally {
+      setProcesando(null);
+    }
+  }
+
+  function actualizarImagenesProducto(productoId: number, imagenes: ImagenProducto[]) {
+    const ordenadas = [...imagenes].sort((a, b) => a.orden - b.orden);
+    setImagenesPorProducto((actuales) => ({ ...actuales, [productoId]: ordenadas }));
+    setProductos((actuales) =>
+      actuales.map((producto) => (producto.id === productoId ? { ...producto, imagenes: ordenadas } : producto))
+    );
+  }
+
+  async function toggleImagenes(productoId: number) {
+    if (imagenesExpandidoId === productoId) {
+      setImagenesExpandidoId(null);
+      return;
+    }
+
+    setImagenesExpandidoId(productoId);
+    if (imagenesPorProducto[productoId] !== undefined) return;
+
+    const clave = `imagenes-carga-${productoId}`;
+    setProcesando(clave);
+    mostrarMensaje(`imagenes-${productoId}`);
+    try {
+      const imagenes = await apiFetch<ImagenProducto[]>(`/img-producto/${productoId}`);
+      actualizarImagenesProducto(productoId, imagenes);
+    } catch (error) {
+      mostrarMensaje(`imagenes-${productoId}`, {
+        tipo: "error",
+        texto: error instanceof Error ? error.message : "No se pudieron cargar las imágenes.",
+      });
+    } finally {
+      setProcesando(null);
+    }
+  }
+
+  async function subirImagenes(event: FormEvent<HTMLFormElement>, productoId: number) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const archivos = Array.from(new FormData(form).getAll("imagenes")).filter(
+      (archivo): archivo is File => archivo instanceof File && archivo.size > 0
+    );
+    const clave = `imagen-upload-${productoId}`;
+
+    if (!archivos.length) {
+      mostrarMensaje(clave, { tipo: "error", texto: "Seleccioná al menos una imagen antes de subir." });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("productoId", String(productoId));
+    archivos.forEach((archivo) => formData.append("imagenes", archivo));
+    setProcesando(clave);
+    mostrarMensaje(clave);
+    try {
+      const creadas = await apiFetch<ImagenProducto[]>("/img-producto/upload", {
+        method: "POST",
+        body: formData,
+      });
+      actualizarImagenesProducto(productoId, [...(imagenesPorProducto[productoId] ?? []), ...creadas]);
+      form.reset();
+      mostrarMensaje(clave, { tipo: "ok", texto: "Imágenes subidas correctamente." });
+    } catch (error) {
+      mostrarMensaje(clave, {
+        tipo: "error",
+        texto: error instanceof Error ? error.message : "No se pudieron subir las imágenes.",
+      });
+    } finally {
+      setProcesando(null);
+    }
+  }
+
+  async function eliminarImagen(productoId: number, imagenId: number) {
+    if (!window.confirm("¿Querés eliminar esta imagen?")) return;
+    const clave = `imagen-${imagenId}`;
+    setProcesando(clave);
+    mostrarMensaje(`imagenes-${productoId}`);
+    try {
+      await apiFetch(`/img-producto/${imagenId}`, { method: "DELETE" });
+      const restantes = (imagenesPorProducto[productoId] ?? []).filter((imagen) => imagen.id !== imagenId);
+      actualizarImagenesProducto(productoId, restantes);
+      mostrarMensaje(`imagenes-${productoId}`, { tipo: "ok", texto: "Imagen eliminada." });
+    } catch (error) {
+      mostrarMensaje(`imagenes-${productoId}`, {
+        tipo: "error",
+        texto: error instanceof Error ? error.message : "No se pudo eliminar la imagen.",
       });
     } finally {
       setProcesando(null);
@@ -428,7 +526,7 @@ export default function AdminProductos({
         <div className="mt-6 overflow-x-auto border-2 border-black bg-white">
           <table className="w-full min-w-[1050px] border-collapse text-left text-sm">
             <thead className="bg-black text-xs uppercase tracking-wider text-white"><tr>
-              {["ID", "Nombre", "Categor\u00eda", "Colecci\u00f3n", "Precio", "Activo", "Web", "Stock total", "Acciones"].map((item) => <th key={item} className="px-3 py-3">{item}</th>)}
+              {["Imagen", "ID", "Nombre", "Categor\u00eda", "Colecci\u00f3n", "Precio", "Activo", "Web", "Stock total", "Acciones"].map((item) => <th key={item} className="px-3 py-3">{item}</th>)}
             </tr></thead>
             <tbody>
               {productos.map((producto) => (
@@ -436,6 +534,8 @@ export default function AdminProductos({
                   key={producto.id}
                   producto={producto}
                   expandido={expandidoId === producto.id}
+                  imagenesExpandido={imagenesExpandidoId === producto.id}
+                  imagenes={imagenesPorProducto[producto.id]}
                   talles={talles}
                   colores={colores}
                   procesando={procesando}
@@ -443,6 +543,9 @@ export default function AdminProductos({
                   onEditar={() => abrirEdicion(producto)}
                   onEliminar={() => eliminarProducto(producto.id)}
                   onExpandir={() => setExpandidoId(expandidoId === producto.id ? null : producto.id)}
+                  onExpandirImagenes={() => toggleImagenes(producto.id)}
+                  onSubirImagenes={subirImagenes}
+                  onEliminarImagen={eliminarImagen}
                   onAgregarVariante={agregarVariante}
                   onGuardarStock={guardarStock}
                   onEliminarVariante={eliminarVariante}
@@ -525,6 +628,8 @@ export default function AdminProductos({
 type FilaProps = {
   producto: Producto;
   expandido: boolean;
+  imagenesExpandido: boolean;
+  imagenes?: ImagenProducto[];
   talles: Talle[];
   colores: Color[];
   procesando: string | null;
@@ -532,6 +637,9 @@ type FilaProps = {
   onEditar: () => void;
   onEliminar: () => void;
   onExpandir: () => void;
+  onExpandirImagenes: () => void;
+  onSubirImagenes: (event: FormEvent<HTMLFormElement>, productoId: number) => void;
+  onEliminarImagen: (productoId: number, imagenId: number) => void;
   onAgregarVariante: (event: FormEvent<HTMLFormElement>, productoId: number) => void;
   onGuardarStock: (event: FormEvent<HTMLFormElement>, productoId: number, variante: TalleProducto) => void;
   onEliminarVariante: (productoId: number, varianteId: number) => void;
@@ -543,6 +651,13 @@ function FragmentoProducto(props: FilaProps) {
   const badge = (valor: boolean) => `inline-block border px-2 py-1 text-[10px] font-bold uppercase ${valor ? "border-green-700 text-green-700" : "border-neutral-400 text-neutral-500"}`;
   return <>
     <tr className="border-b border-neutral-300">
+      <td className="px-3 py-3">
+        {producto.imagenes[0]?.url ? (
+          <img src={producto.imagenes[0].url} alt={producto.nombre} className="h-12 w-12 border-2 border-black object-cover" />
+        ) : (
+          <div className="flex h-12 w-12 items-center justify-center border-2 border-black bg-neutral-200 text-center text-xs font-bold uppercase text-neutral-500">Sin img</div>
+        )}
+      </td>
       <td className="px-3 py-3 font-bold">{producto.id}</td><td className="px-3 py-3 font-bold">{producto.nombre}</td>
       <td className="px-3 py-3">{producto.categoria.nombre}</td><td className="px-3 py-3">{producto.coleccion?.nombre ?? "-"}</td>
       <td className="px-3 py-3">${producto.precio}</td><td className="px-3 py-3"><span className={badge(producto.activo)}>{producto.activo ? "S\u00ed" : "No"}</span></td>
@@ -550,10 +665,39 @@ function FragmentoProducto(props: FilaProps) {
       <td className="px-3 py-3"><div className="flex flex-wrap gap-2">
         <button type="button" onClick={props.onEditar} className="text-xs font-bold uppercase underline">Editar</button>
         <button type="button" disabled={props.procesando === `producto-${producto.id}`} onClick={props.onEliminar} className="text-xs font-bold uppercase text-red-700 underline disabled:opacity-50">Eliminar</button>
+        <button type="button" onClick={props.onExpandirImagenes} className="text-xs font-bold uppercase underline">{props.imagenesExpandido ? "Ocultar imágenes" : "Imágenes"}</button>
         <button type="button" onClick={props.onExpandir} className="text-xs font-bold uppercase underline">{props.expandido ? "Ocultar variantes" : "Ver variantes"}</button>
       </div>{props.mensajes[`producto-${producto.id}`] && <p className={`mt-2 text-xs ${props.mensajes[`producto-${producto.id}`].tipo === "ok" ? "text-green-700" : "text-red-700"}`}>{props.mensajes[`producto-${producto.id}`].texto}</p>}</td>
     </tr>
-    {props.expandido && <tr className="border-b-2 border-black bg-neutral-100"><td colSpan={9} className="p-5">
+    {props.imagenesExpandido && <tr className="border-b-2 border-black bg-neutral-100"><td colSpan={10} className="p-5">
+      {props.procesando === `imagenes-carga-${producto.id}` && props.imagenes === undefined ? (
+        <p className="text-xs font-bold uppercase text-neutral-500">Cargando imágenes...</p>
+      ) : (
+        <>
+          {props.imagenes?.length ? (
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+              {props.imagenes.map((imagen) => (
+                <div key={imagen.id}>
+                  <img src={imagen.url} alt={`${producto.nombre} - imagen ${imagen.orden}`} className="aspect-square w-full border-2 border-black object-cover" />
+                  <button type="button" disabled={props.procesando === `imagen-${imagen.id}`} onClick={() => props.onEliminarImagen(producto.id, imagen.id)} className="mt-2 text-xs font-bold uppercase text-red-700 underline disabled:opacity-50">
+                    {props.procesando === `imagen-${imagen.id}` ? "Eliminando..." : "Eliminar"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs font-bold uppercase text-neutral-500">Sin imágenes cargadas.</p>
+          )}
+          <MensajeEstado mensaje={props.mensajes[`imagenes-${producto.id}`]} />
+          <form onSubmit={(event) => props.onSubirImagenes(event, producto.id)} className="mt-5 space-y-3 border-t-2 border-black pt-5">
+            <input type="file" name="imagenes" multiple accept="image/jpeg,image/png,image/webp,image/avif" disabled={props.procesando === `imagen-upload-${producto.id}`} className="block w-full text-xs file:mr-3 file:border file:border-black file:bg-white file:px-3 file:py-2 file:text-xs file:font-bold file:uppercase" />
+            <button disabled={props.procesando === `imagen-upload-${producto.id}`} className={botonNegro}>{props.procesando === `imagen-upload-${producto.id}` ? "Subiendo..." : "Subir imágenes"}</button>
+            <MensajeEstado mensaje={props.mensajes[`imagen-upload-${producto.id}`]} />
+          </form>
+        </>
+      )}
+    </td></tr>}
+    {props.expandido && <tr className="border-b-2 border-black bg-neutral-100"><td colSpan={10} className="p-5">
       <div className="overflow-x-auto"><table className="w-full min-w-[700px] bg-white text-sm"><thead><tr className="border-b-2 border-black text-xs uppercase tracking-wider"><th className="p-2">Talle</th><th className="p-2">Color</th><th className="p-2">Stock</th><th className="p-2">Estado</th><th className="p-2">Acciones</th></tr></thead><tbody>
         {producto.talles.map((variante) => <tr key={variante.id} className={`border-b border-neutral-300 ${variante.estado === "inactivo" ? "opacity-50" : ""}`}>
           <td className="p-2">{variante.talle.valor}</td><td className="p-2"><span className="inline-flex items-center gap-2"><span className="h-4 w-4 border border-black" style={{ backgroundColor: variante.color.hex }} />{variante.color.nombre}</span></td>

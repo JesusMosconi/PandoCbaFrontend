@@ -11,6 +11,6 @@ export interface Producto {
   coleccionId: number | null;
   categoria: { id: number; nombre: string };
   coleccion: { id: number; nombre: string } | null;
-  imagenes: { url: string; orden: number }[];
+  imagenes: { id: number; url: string; orden: number }[];
   talles: TalleProducto[];
 }
