@@ -1,6 +1,8 @@
 import Link from "next/link";
 import AdminProductos from "@/components/AdminProductos";
 import { apiFetch } from "@/lib/api";
+import { exigirAdministrador } from "@/lib/autorizacion";
+import { obtenerTokenSesion } from "@/lib/session";
 import type { Categoria } from "@/types/categoria";
 import type { Coleccion } from "@/types/coleccion";
 import type { Color } from "@/types/color";
@@ -10,6 +12,9 @@ import type { Talle } from "@/types/talle";
 export const dynamic = "force-dynamic";
 
 export default async function AdminProductosPage() {
+  await exigirAdministrador();
+  const token = await obtenerTokenSesion();
+
   let productos: Producto[] = [];
   let categorias: Categoria[] = [];
   let colecciones: Coleccion[] = [];
@@ -19,7 +24,9 @@ export default async function AdminProductosPage() {
 
   try {
     [productos, categorias, colecciones, talles, colores] = await Promise.all([
-      apiFetch<Producto[]>("/productos?admin=true"),
+      apiFetch<Producto[]>("/productos?admin=true", {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
       apiFetch<Categoria[]>("/categorias"),
       apiFetch<Coleccion[]>("/colecciones"),
       apiFetch<Talle[]>("/talles"),
@@ -37,16 +44,13 @@ export default async function AdminProductosPage() {
             <Link href="/admin/imagenes">{"Im\u00e1genes"}</Link>
             <Link className="underline underline-offset-4" href="/admin/productos">Productos</Link>
           </nav>
-          <p className="text-xs font-bold uppercase tracking-[0.25em] text-neutral-500">Panel provisional</p>
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-neutral-500">Panel administrativo</p>
           <h1 className="mt-3 font-epilogue text-4xl font-black uppercase leading-none sm:text-6xl">
             Administrar productos
           </h1>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-neutral-600">
             {"Cre\u00e1 y edit\u00e1 productos, variantes, talles y colores del cat\u00e1logo."}
           </p>
-          <div className="mt-5 border border-amber-500 bg-amber-50 p-4 text-sm text-amber-900">
-            {"Esta pantalla todav\u00eda no tiene autenticaci\u00f3n. No debe publicarse sin proteger el acceso administrativo."}
-          </div>
         </header>
 
         {errorCarga ? (

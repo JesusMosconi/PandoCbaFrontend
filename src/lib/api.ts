@@ -50,3 +50,8 @@ export async function apiFetchInterna<T>(endpoint: string, options: RequestInit 
 
   return res.json();
 }
+
+/** Envía operaciones administrativas mediante el proxy que valida la sesión httpOnly. */
+export function apiFetchAdmin<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  return apiFetchInterna<T>(`/api/admin${endpoint}`, options);
+}
