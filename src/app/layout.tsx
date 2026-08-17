@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Epilogue, Manrope } from "next/font/google";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
+import { obtenerSesion } from "@/lib/session";
 import "./globals.css";
 
 const epilogue = Epilogue({
@@ -22,18 +23,20 @@ export const metadata: Metadata = {
   description: "Tienda de ropa urbana en Córdoba.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const sesion = await obtenerSesion();
+
   return (
     <html
       lang="es"
       className={`${epilogue.variable} ${manrope.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Header />
+        <Header sesionIniciada={Boolean(sesion)} />
         <main className="mx-auto w-full max-w-[1280px] flex-1 pt-20">{children}</main>
         <Footer />
       </body>

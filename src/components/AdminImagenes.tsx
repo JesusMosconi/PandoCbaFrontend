@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetchAdmin } from "@/lib/api";
 import type { Categoria } from "@/types/categoria";
 import type { Coleccion } from "@/types/coleccion";
 import type { ContenidoInicio } from "@/types/contenido-inicio";
@@ -115,7 +115,7 @@ export default function AdminImagenes({ categorias, colecciones, contenidos, ima
     });
 
     try {
-      const actualizada = await apiFetch<{ imagenUrl: string }>(`/${tipo}/${id}/imagen`, {
+      const actualizada = await apiFetchAdmin<{ imagenUrl: string }>(`/${tipo}/${id}/imagen`, {
         method: "POST",
         body: formData,
       });
@@ -150,7 +150,7 @@ export default function AdminImagenes({ categorias, colecciones, contenidos, ima
     });
 
     try {
-      await apiFetch(`/${tipo}/${id}/imagen`, { method: "DELETE" });
+      await apiFetchAdmin(`/${tipo}/${id}/imagen`, { method: "DELETE" });
       actualizarImagen(tipo, id, null);
       setMensajes((actuales) => ({
         ...actuales,

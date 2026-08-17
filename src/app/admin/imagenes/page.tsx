@@ -1,6 +1,7 @@
 import AdminImagenes from "@/components/AdminImagenes";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
+import { exigirAdministrador } from "@/lib/autorizacion";
 import type { Categoria } from "@/types/categoria";
 import type { Coleccion } from "@/types/coleccion";
 import type { ContenidoInicio } from "@/types/contenido-inicio";
@@ -9,6 +10,8 @@ import type { ImagenNosotros } from "@/types/imagen-nosotros";
 export const dynamic = "force-dynamic";
 
 export default async function AdminImagenesPage() {
+  await exigirAdministrador();
+
   let categorias: Categoria[] = [];
   let colecciones: Coleccion[] = [];
   let contenidos: ContenidoInicio[] = [];
@@ -31,19 +34,16 @@ export default async function AdminImagenesPage() {
       <div className="mx-auto max-w-6xl">
         <header className="mb-12">
           <nav className="mb-8 flex gap-5 text-xs font-bold uppercase tracking-widest">
-            <Link className="underline underline-offset-4" href="/admin/imagenes">ImÃ¡genes</Link>
+            <Link className="underline underline-offset-4" href="/admin/imagenes">Imagenes</Link>
             <Link href="/admin/productos">Productos</Link>
           </nav>
-          <p className="text-xs font-bold uppercase tracking-[0.25em] text-neutral-500">Panel provisional</p>
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-neutral-500">Panel administrativo</p>
           <h1 className="mt-3 font-epilogue text-4xl font-black uppercase leading-none sm:text-6xl">
             Administrar imágenes
           </h1>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-neutral-600">
             Subí, reemplazá o eliminá las imágenes visibles en categorías, colecciones y contenidos de Inicio.
           </p>
-          <div className="mt-5 border border-amber-500 bg-amber-50 p-4 text-sm text-amber-900">
-            Esta pantalla todavía no tiene autenticación. No debe publicarse sin proteger el acceso administrativo.
-          </div>
         </header>
 
         {errorCarga ? (

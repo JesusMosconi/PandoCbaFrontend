@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetchAdmin } from "@/lib/api";
 import type { Categoria } from "@/types/categoria";
 import type { Coleccion } from "@/types/coleccion";
 import type { Color } from "@/types/color";
@@ -126,7 +126,7 @@ export default function AdminProductos({
     };
 
     try {
-      const guardado = await apiFetch<Producto>(editandoId ? `/productos/${editandoId}` : "/productos", {
+      const guardado = await apiFetchAdmin<Producto>(editandoId ? `/productos/${editandoId}` : "/productos", {
         method: editandoId ? "PUT" : "POST",
         body: JSON.stringify(data),
       });
@@ -162,7 +162,7 @@ export default function AdminProductos({
     setProcesando(clave);
     mostrarMensaje(clave);
     try {
-      await apiFetch(`/productos/${id}`, { method: "DELETE" });
+      await apiFetchAdmin(`/productos/${id}`, { method: "DELETE" });
       setProductos((actuales) => actuales.map((item) => (item.id === id ? { ...item, activo: false } : item)));
       mostrarMensaje(clave, { tipo: "ok", texto: "Producto desactivado." });
     } catch (error) {
@@ -196,7 +196,7 @@ export default function AdminProductos({
     setProcesando(clave);
     mostrarMensaje(`imagenes-${productoId}`);
     try {
-      const imagenes = await apiFetch<ImagenProducto[]>(`/img-producto/${productoId}`);
+      const imagenes = await apiFetchAdmin<ImagenProducto[]>(`/img-producto/${productoId}`);
       actualizarImagenesProducto(productoId, imagenes);
     } catch (error) {
       mostrarMensaje(`imagenes-${productoId}`, {
@@ -227,7 +227,7 @@ export default function AdminProductos({
     setProcesando(clave);
     mostrarMensaje(clave);
     try {
-      const creadas = await apiFetch<ImagenProducto[]>("/img-producto/upload", {
+      const creadas = await apiFetchAdmin<ImagenProducto[]>("/img-producto/upload", {
         method: "POST",
         body: formData,
       });
@@ -250,7 +250,7 @@ export default function AdminProductos({
     setProcesando(clave);
     mostrarMensaje(`imagenes-${productoId}`);
     try {
-      await apiFetch(`/img-producto/${imagenId}`, { method: "DELETE" });
+      await apiFetchAdmin(`/img-producto/${imagenId}`, { method: "DELETE" });
       const restantes = (imagenesPorProducto[productoId] ?? []).filter((imagen) => imagen.id !== imagenId);
       actualizarImagenesProducto(productoId, restantes);
       mostrarMensaje(`imagenes-${productoId}`, { tipo: "ok", texto: "Imagen eliminada." });
@@ -292,7 +292,7 @@ export default function AdminProductos({
     setProcesando(clave);
     mostrarMensaje(clave);
     try {
-      const variante = await apiFetch<TalleProducto>("/talle-producto", {
+      const variante = await apiFetchAdmin<TalleProducto>("/talle-producto", {
         method: "POST",
         body: JSON.stringify(data),
       });
@@ -316,7 +316,7 @@ export default function AdminProductos({
     setProcesando(clave);
     mostrarMensaje(clave);
     try {
-      const actualizada = await apiFetch<TalleProducto>(`/talle-producto/${variante.id}`, {
+      const actualizada = await apiFetchAdmin<TalleProducto>(`/talle-producto/${variante.id}`, {
         method: "PUT",
         body: JSON.stringify({
           stock,
@@ -344,7 +344,7 @@ export default function AdminProductos({
     setProcesando(clave);
     mostrarMensaje(clave);
     try {
-      const actualizada = await apiFetch<TalleProducto>(`/talle-producto/${varianteId}`, { method: "DELETE" });
+      const actualizada = await apiFetchAdmin<TalleProducto>(`/talle-producto/${varianteId}`, { method: "DELETE" });
       actualizarVariante(productoId, actualizada);
       mostrarMensaje(clave, { tipo: "ok", texto: "Variante desactivada." });
     } catch (error) {
@@ -366,7 +366,7 @@ export default function AdminProductos({
     setProcesando(clave);
     mostrarMensaje(clave);
     try {
-      const respuesta = await apiFetch<{ talle: Talle }>("/talles", {
+      const respuesta = await apiFetchAdmin<{ talle: Talle }>("/talles", {
         method: "POST",
         body: JSON.stringify({ valor: String(dataForm.get("valor")), ...(orden ? { orden: Number(orden) } : {}) }),
       });
@@ -388,7 +388,7 @@ export default function AdminProductos({
     setProcesando(clave);
     mostrarMensaje(clave);
     try {
-      const respuesta = await apiFetch<{ color: Color }>("/colors", {
+      const respuesta = await apiFetchAdmin<{ color: Color }>("/colors", {
         method: "POST",
         body: JSON.stringify({ nombre: String(dataForm.get("nombre")), hex: String(dataForm.get("hex")) }),
       });
@@ -410,7 +410,7 @@ export default function AdminProductos({
     setProcesando(clave);
     mostrarMensaje(clave);
     try {
-      const actualizado = await apiFetch<Talle>(`/talles/${id}`, {
+      const actualizado = await apiFetchAdmin<Talle>(`/talles/${id}`, {
         method: "PUT",
         body: JSON.stringify({ valor: String(dataForm.get("valor")), ...(orden ? { orden: Number(orden) } : {}) }),
       });
@@ -430,7 +430,7 @@ export default function AdminProductos({
     setProcesando(clave);
     mostrarMensaje(clave);
     try {
-      await apiFetch(`/talles/${id}`, { method: "DELETE" });
+      await apiFetchAdmin(`/talles/${id}`, { method: "DELETE" });
       setTalles((actuales) => actuales.filter((item) => item.id !== id));
     } catch (error) {
       mostrarMensaje(clave, { tipo: "error", texto: error instanceof Error ? error.message : "No se pudo eliminar el talle." });
@@ -446,7 +446,7 @@ export default function AdminProductos({
     setProcesando(clave);
     mostrarMensaje(clave);
     try {
-      const actualizado = await apiFetch<Color>(`/colors/${id}`, {
+      const actualizado = await apiFetchAdmin<Color>(`/colors/${id}`, {
         method: "PUT",
         body: JSON.stringify({ nombre: String(dataForm.get("nombre")), hex: String(dataForm.get("hex")) }),
       });
@@ -466,7 +466,7 @@ export default function AdminProductos({
     setProcesando(clave);
     mostrarMensaje(clave);
     try {
-      await apiFetch(`/colors/${id}`, { method: "DELETE" });
+      await apiFetchAdmin(`/colors/${id}`, { method: "DELETE" });
       setColores((actuales) => actuales.filter((item) => item.id !== id));
     } catch (error) {
       mostrarMensaje(clave, { tipo: "error", texto: error instanceof Error ? error.message : "No se pudo eliminar el color." });

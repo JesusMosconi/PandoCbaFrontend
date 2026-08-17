@@ -11,7 +11,11 @@ const navItems = [
   { href: "/nosotros", label: "Nosotros" },
 ];
 
-export default function Header() {
+type HeaderProps = {
+  sesionIniciada: boolean;
+};
+
+export default function Header({ sesionIniciada }: HeaderProps) {
   const pathname = usePathname();
   const [search, setSearch] = useState("");
 
@@ -52,9 +56,9 @@ export default function Header() {
           <button type="button" aria-label="Carrito" className="hidden text-black sm:block">
             <ShoppingBag size={20} strokeWidth={1.8} />
           </button>
-          <button type="button" aria-label="Cuenta" className="hidden text-black sm:block">
+          <Link href={sesionIniciada ? "/cuenta" : "/login"} aria-label={sesionIniciada ? "Mi cuenta" : "Ingresar"} className="hidden text-black sm:block">
             <User size={20} strokeWidth={1.8} />
-          </button>
+          </Link>
           <button type="button" aria-label="Abrir menú" className="text-black sm:hidden">
             <Menu size={22} strokeWidth={1.8} />
           </button>
