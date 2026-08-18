@@ -3,6 +3,8 @@ import { ApiError, apiFetch } from "@/lib/api";
 import type { Producto } from "@/types/producto";
 import { notFound } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 type ProductoPageProps = {
   params: Promise<{ id: string }>;
 };

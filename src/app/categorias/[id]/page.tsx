@@ -7,6 +7,8 @@ import type { Categoria } from "@/types/categoria";
 import type { Producto } from "@/types/producto";
 import { notFound } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 type CategoryPageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ talle?: string | string[]; orden?: string | string[] }>;
