@@ -13,9 +13,10 @@ const navItems = [
 
 type HeaderProps = {
   sesionIniciada: boolean;
+  esAdmin?: boolean;
 };
 
-export default function Header({ sesionIniciada }: HeaderProps) {
+export default function Header({ sesionIniciada, esAdmin = false }: HeaderProps) {
   const pathname = usePathname();
   const [search, setSearch] = useState("");
 
@@ -44,7 +45,16 @@ export default function Header({ sesionIniciada }: HeaderProps) {
           })}
         </nav>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 sm:gap-6">
+          {esAdmin && (
+            <Link
+              href="/admin"
+              className="hidden border border-black bg-black px-3 py-2 font-manrope text-[10px] font-bold uppercase tracking-[0.2em] text-white sm:inline-flex"
+            >
+              Admin
+            </Link>
+          )}
+
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}

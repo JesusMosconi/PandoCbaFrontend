@@ -36,6 +36,7 @@ export default async function AdminImagenesPage() {
           <nav className="mb-8 flex gap-5 text-xs font-bold uppercase tracking-widest">
             <Link className="underline underline-offset-4" href="/admin/imagenes">Imagenes</Link>
             <Link href="/admin/productos">Productos</Link>
+            <Link href="/admin/clientes">Clientes</Link>
           </nav>
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-neutral-500">Panel administrativo</p>
           <h1 className="mt-3 font-epilogue text-4xl font-black uppercase leading-none sm:text-6xl">

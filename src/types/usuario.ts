@@ -6,6 +6,19 @@ export type Usuario = {
   telefono: string | null;
   fechaCreado: string;
   rol: "cliente" | "admin";
+  activo: boolean;
+};
+
+export type UsuarioAdmin = Usuario & {
+  _count?: { ordenes: number; favoritos?: number };
+};
+
+export type UsuariosAdminRespuesta = {
+  usuarios: UsuarioAdmin[];
+  total: number;
+  pagina: number;
+  limite: number;
+  paginas: number;
 };
 
 export type RespuestaAuth = {
