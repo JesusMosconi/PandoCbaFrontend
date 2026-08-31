@@ -29,6 +29,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const sesion = await obtenerSesion();
+  const esAdmin = sesion?.rol === "admin";
 
   return (
     <html
@@ -36,7 +37,7 @@ export default async function RootLayout({
       className={`${epilogue.variable} ${manrope.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Header sesionIniciada={Boolean(sesion)} />
+        <Header sesionIniciada={Boolean(sesion)} esAdmin={esAdmin} />
         <main className="mx-auto w-full max-w-[1280px] flex-1 pt-20">{children}</main>
         <Footer />
       </body>

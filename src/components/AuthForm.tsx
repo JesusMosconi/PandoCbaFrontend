@@ -33,11 +33,12 @@ export default function AuthForm() {
         };
 
     try {
-      await apiFetchInterna<{ usuario: Usuario }>(`/api/auth/${modo}`, {
+      const respuesta = await apiFetchInterna<{ usuario: Usuario }>(`/api/auth/${modo}`, {
         method: "POST",
         body: JSON.stringify(body),
       });
-      router.push("/cuenta");
+
+      router.push(respuesta.usuario.rol === "admin" ? "/admin" : "/cuenta");
       router.refresh();
     } catch (error) {
       setMensaje(error instanceof ApiError ? error.message : "No pudimos procesar tu solicitud. Intentá de nuevo.");
