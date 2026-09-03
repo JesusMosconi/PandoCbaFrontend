@@ -9,8 +9,11 @@ type Mensaje = { tipo: "ok" | "error"; texto: string };
 
 const inputClass = "border-2 border-black bg-white px-3 py-2 text-sm";
 
-function fecha(fechaCreado: string) {
-  return new Intl.DateTimeFormat("es-AR", { dateStyle: "medium" }).format(new Date(fechaCreado));
+function fecha(fechaCreado: string | null | undefined) {
+  if (!fechaCreado) return "Sin datos";
+  const parsed = new Date(fechaCreado);
+  if (Number.isNaN(parsed.getTime())) return "Sin datos";
+  return new Intl.DateTimeFormat("es-AR", { dateStyle: "medium" }).format(parsed);
 }
 
 export default function AdminClientes({ respuestaInicial }: Props) {
@@ -36,7 +39,7 @@ export default function AdminClientes({ respuestaInicial }: Props) {
       if (cancelado) return;
       setCargando(true);
       try {
-        const siguiente = await apiFetchAdmin<UsuariosAdminRespuesta>(`/usuarios?${parametros}`);
+        const siguiente = await apiFetchAdmin<UsuariosAdminRespuesta>(`/admin/usuarios?${parametros}`);
         if (!cancelado) setRespuesta(siguiente);
       } catch (error) {
         if (!cancelado) setMensaje({ tipo: "error", texto: error instanceof ApiError ? error.message : "No se pudieron cargar los clientes." });
@@ -50,7 +53,7 @@ export default function AdminClientes({ respuestaInicial }: Props) {
 
   async function verDetalle(usuario: UsuarioAdmin) {
     try {
-      setDetalle(await apiFetchAdmin<UsuarioAdmin>(`/usuarios/${usuario.id}`));
+      setDetalle(await apiFetchAdmin<UsuarioAdmin>(`/admin/usuarios/${usuario.id}`));
     } catch (error) {
       setMensaje({ tipo: "error", texto: error instanceof ApiError ? error.message : "No se pudo cargar el detalle." });
     }
@@ -59,7 +62,7 @@ export default function AdminClientes({ respuestaInicial }: Props) {
   async function cambiarEstado(usuario: UsuarioAdmin) {
     if (!window.confirm(`¿Querés ${usuario.activo ? "desactivar" : "activar"} a ${usuario.nombre}?`)) return;
     try {
-      const actualizado = await apiFetchAdmin<UsuarioAdmin>(`/usuarios/${usuario.id}/estado`, { method: "PATCH", body: JSON.stringify({ activo: !usuario.activo }) });
+      const actualizado = await apiFetchAdmin<UsuarioAdmin>(`/admin/usuarios/${usuario.id}/estado`, { method: "PATCH", body: JSON.stringify({ activo: !usuario.activo }) });
       setRespuesta((actual) => ({ ...actual, usuarios: actual.usuarios.map((item) => item.id === usuario.id ? { ...item, activo: actualizado.activo } : item) }));
       setDetalle((actual) => actual?.id === usuario.id ? { ...actual, activo: actualizado.activo } : actual);
       setMensaje({ tipo: "ok", texto: `Usuario ${actualizado.activo ? "activado" : "desactivado"}.` });
@@ -71,7 +74,7 @@ export default function AdminClientes({ respuestaInicial }: Props) {
   async function cambiarRol(usuario: UsuarioAdmin, nuevoRol: "cliente" | "admin") {
     if (nuevoRol === usuario.rol || !window.confirm("¿Querés cambiar el rol de este usuario?")) return;
     try {
-      const actualizado = await apiFetchAdmin<UsuarioAdmin>(`/usuarios/${usuario.id}/rol`, { method: "PUT", body: JSON.stringify({ rol: nuevoRol }) });
+      const actualizado = await apiFetchAdmin<UsuarioAdmin>(`/admin/usuarios/${usuario.id}/rol`, { method: "PUT", body: JSON.stringify({ rol: nuevoRol }) });
       setRespuesta((actual) => ({ ...actual, usuarios: actual.usuarios.map((item) => item.id === usuario.id ? { ...item, rol: actualizado.rol } : item) }));
       setDetalle((actual) => actual?.id === usuario.id ? { ...actual, rol: actualizado.rol } : actual);
       setMensaje({ tipo: "ok", texto: "Rol actualizado." });

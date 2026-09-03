@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, ShoppingBag, User } from "lucide-react";
+import { Menu, ShoppingBag, User, X } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
@@ -19,6 +19,7 @@ type HeaderProps = {
 export default function Header({ sesionIniciada, esAdmin = false }: HeaderProps) {
   const pathname = usePathname();
   const [search, setSearch] = useState("");
+  const [menuAbierto, setMenuAbierto] = useState(false);
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 h-20 border-b-2 border-black bg-white">
@@ -69,11 +70,57 @@ export default function Header({ sesionIniciada, esAdmin = false }: HeaderProps)
           <Link href={sesionIniciada ? "/cuenta" : "/login"} aria-label={sesionIniciada ? "Mi cuenta" : "Ingresar"} className="hidden text-black sm:block">
             <User size={20} strokeWidth={1.8} />
           </Link>
-          <button type="button" aria-label="Abrir menú" className="text-black sm:hidden">
-            <Menu size={22} strokeWidth={1.8} />
+          <button
+            type="button"
+            aria-label={menuAbierto ? "Cerrar menú" : "Abrir menú"}
+            aria-expanded={menuAbierto}
+            aria-controls="menu-mobile"
+            onClick={() => setMenuAbierto((abierto) => !abierto)}
+            className="text-black sm:hidden"
+          >
+            {menuAbierto ? <X size={22} strokeWidth={1.8} /> : <Menu size={22} strokeWidth={1.8} />}
           </button>
         </div>
       </div>
+
+      {menuAbierto && (
+        <nav
+          id="menu-mobile"
+          aria-label="Navegación móvil"
+          className="absolute inset-x-0 top-full border-b-2 border-black bg-white px-5 py-6 sm:hidden"
+        >
+          <div className="flex flex-col">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMenuAbierto(false)}
+                className={`border-b border-black py-4 font-epilogue text-sm font-bold uppercase tracking-widest ${
+                  pathname === item.href ? "bg-black px-3 text-white" : "text-black"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
+            {esAdmin && (
+              <Link
+                href="/admin"
+                onClick={() => setMenuAbierto(false)}
+                className="border-b border-black py-4 font-epilogue text-sm font-bold uppercase tracking-widest text-black"
+              >
+                Admin
+              </Link>
+            )}
+            <Link
+              href={sesionIniciada ? "/cuenta" : "/login"}
+              onClick={() => setMenuAbierto(false)}
+              className="py-4 font-epilogue text-sm font-bold uppercase tracking-widest text-black"
+            >
+              {sesionIniciada ? "Mi cuenta" : "Ingresar"}
+            </Link>
+          </div>
+        </nav>
+      )}
     </header>
   );
 }

@@ -36,4 +36,5 @@ async function reenviar(request: NextRequest, { params }: { params: Promise<{ ru
 export const GET = reenviar;
 export const POST = reenviar;
 export const PUT = reenviar;
+export const PATCH = reenviar;
 export const DELETE = reenviar;
