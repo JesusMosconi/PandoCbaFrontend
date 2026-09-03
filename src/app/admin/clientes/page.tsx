@@ -3,6 +3,7 @@ import AdminClientes from "@/components/AdminClientes";
 import { apiFetch } from "@/lib/api";
 import { exigirAdministrador } from "@/lib/autorizacion";
 import { obtenerTokenSesion } from "@/lib/session";
+import { normalizarRespuestaUsuarios } from "@/lib/usuarios";
 import type { UsuariosAdminRespuesta } from "@/types/usuario";
 
 export const dynamic = "force-dynamic";
@@ -14,9 +15,10 @@ export default async function AdminClientesPage() {
   let errorCarga = false;
 
   try {
-    respuesta = await apiFetch<UsuariosAdminRespuesta>("/admin/usuarios?pagina=1&limite=20", {
+    const datos = await apiFetch<unknown>("/admin/usuarios?pagina=1&limite=20", {
       headers: { Authorization: `Bearer ${token}` },
     });
+    respuesta = normalizarRespuestaUsuarios(datos);
   } catch {
     errorCarga = true;
   }

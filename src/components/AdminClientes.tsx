@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiFetchAdmin, ApiError } from "@/lib/api";
+import { normalizarRespuestaUsuarios } from "@/lib/usuarios";
 import type { UsuarioAdmin, UsuariosAdminRespuesta } from "@/types/usuario";
 
 type Props = { respuestaInicial: UsuariosAdminRespuesta };
@@ -39,8 +40,8 @@ export default function AdminClientes({ respuestaInicial }: Props) {
       if (cancelado) return;
       setCargando(true);
       try {
-        const siguiente = await apiFetchAdmin<UsuariosAdminRespuesta>(`/admin/usuarios?${parametros}`);
-        if (!cancelado) setRespuesta(siguiente);
+        const datos = await apiFetchAdmin<unknown>(`/admin/usuarios?${parametros}`);
+        if (!cancelado) setRespuesta(normalizarRespuestaUsuarios(datos, pagina));
       } catch (error) {
         if (!cancelado) setMensaje({ tipo: "error", texto: error instanceof ApiError ? error.message : "No se pudieron cargar los clientes." });
       } finally {
