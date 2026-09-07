@@ -63,10 +63,9 @@ export default function Header({ sesionIniciada, esAdmin = false }: HeaderProps)
             aria-label="Buscar productos"
             className="hidden h-[34px] w-32 border border-black bg-transparent px-3 font-manrope text-[10px] font-bold uppercase tracking-widest text-gray-500 outline-none placeholder:text-gray-500 sm:block"
           />
-          {/* TODO: conectar búsqueda, carrito y cuenta cuando esas funcionalidades estén disponibles. */}
-          <button type="button" aria-label="Carrito" className="hidden text-black sm:block">
+          <Link href={sesionIniciada ? "/carrito" : "/login"} aria-label="Carrito" className="hidden text-black sm:block">
             <ShoppingBag size={20} strokeWidth={1.8} />
-          </button>
+          </Link>
           <Link href={sesionIniciada ? "/cuenta" : "/login"} aria-label={sesionIniciada ? "Mi cuenta" : "Ingresar"} className="hidden text-black sm:block">
             <User size={20} strokeWidth={1.8} />
           </Link>
@@ -117,6 +116,13 @@ export default function Header({ sesionIniciada, esAdmin = false }: HeaderProps)
               className="py-4 font-epilogue text-sm font-bold uppercase tracking-widest text-black"
             >
               {sesionIniciada ? "Mi cuenta" : "Ingresar"}
+            </Link>
+            <Link
+              href={sesionIniciada ? "/carrito" : "/login"}
+              onClick={() => setMenuAbierto(false)}
+              className="border-t border-black py-4 font-epilogue text-sm font-bold uppercase tracking-widest text-black"
+            >
+              Carrito
             </Link>
           </div>
         </nav>
