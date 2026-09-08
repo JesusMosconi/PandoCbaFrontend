@@ -85,6 +85,7 @@ export default function ProductVariants({ talles }: ProductVariantsProps) {
               method: "POST",
               body: JSON.stringify({ talleProductoId: talleSeleccionado, cantidad: 1 }),
             });
+            window.dispatchEvent(new Event("carrito-actualizado"));
             router.push("/carrito");
           } catch (error) {
             setMensaje(error instanceof ApiError ? error.message : "No pudimos agregar la variante");

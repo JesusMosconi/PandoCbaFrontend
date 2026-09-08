@@ -58,6 +58,7 @@ export default function CuentaPanel({ usuarioInicial }: CuentaPanelProps) {
 
   async function cerrarSesion() {
     await fetch("/api/auth/logout", { method: "POST" });
+    window.dispatchEvent(new Event("sesion-cerrada"));
     router.push("/");
     router.refresh();
   }
