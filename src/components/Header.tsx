@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, ShoppingBag, User, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { apiFetchInterna } from "@/lib/api";
+import type { Carrito } from "@/types/carrito";
 
 const navItems = [
   { href: "/", label: "Inicio" },
@@ -20,6 +22,26 @@ export default function Header({ sesionIniciada, esAdmin = false }: HeaderProps)
   const pathname = usePathname();
   const [search, setSearch] = useState("");
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [cantidadCarrito, setCantidadCarrito] = useState(0);
+
+  useEffect(() => {
+    if (!sesionIniciada) return;
+
+    const cargarCantidadCarrito = () => {
+      apiFetchInterna<Carrito>("/api/carrito")
+        .then((carrito) => setCantidadCarrito(carrito.items.reduce((total, item) => total + item.cantidad, 0)))
+        .catch(() => setCantidadCarrito(0));
+    };
+
+    cargarCantidadCarrito();
+    window.addEventListener("carrito-actualizado", cargarCantidadCarrito);
+    const limpiarCantidadAlCerrarSesion = () => setCantidadCarrito(0);
+    window.addEventListener("sesion-cerrada", limpiarCantidadAlCerrarSesion);
+    return () => {
+      window.removeEventListener("carrito-actualizado", cargarCantidadCarrito);
+      window.removeEventListener("sesion-cerrada", limpiarCantidadAlCerrarSesion);
+    };
+  }, [pathname, sesionIniciada]);
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 h-20 border-b-2 border-black bg-white">
@@ -63,8 +85,9 @@ export default function Header({ sesionIniciada, esAdmin = false }: HeaderProps)
             aria-label="Buscar productos"
             className="hidden h-[34px] w-32 border border-black bg-transparent px-3 font-manrope text-[10px] font-bold uppercase tracking-widest text-gray-500 outline-none placeholder:text-gray-500 sm:block"
           />
-          <Link href={sesionIniciada ? "/carrito" : "/login"} aria-label="Carrito" className="hidden text-black sm:block">
+          <Link href={sesionIniciada ? "/carrito" : "/login"} aria-label={`Carrito${cantidadCarrito ? `, ${cantidadCarrito} productos` : ""}`} className="relative hidden text-black sm:block">
             <ShoppingBag size={20} strokeWidth={1.8} />
+            {cantidadCarrito > 0 && <span className="absolute -right-3 -top-3 flex h-4 min-w-4 items-center justify-center bg-black px-1 font-manrope text-[9px] font-bold leading-none text-white">{cantidadCarrito}</span>}
           </Link>
           <Link href={sesionIniciada ? "/cuenta" : "/login"} aria-label={sesionIniciada ? "Mi cuenta" : "Ingresar"} className="hidden text-black sm:block">
             <User size={20} strokeWidth={1.8} />
@@ -122,7 +145,7 @@ export default function Header({ sesionIniciada, esAdmin = false }: HeaderProps)
               onClick={() => setMenuAbierto(false)}
               className="border-t border-black py-4 font-epilogue text-sm font-bold uppercase tracking-widest text-black"
             >
-              Carrito
+              Carrito{cantidadCarrito > 0 && ` (${cantidadCarrito})`}
             </Link>
           </div>
         </nav>
