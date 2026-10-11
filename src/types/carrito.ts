@@ -2,6 +2,7 @@ import type { TalleProducto } from "@/types/talle-producto";
 
 export interface ItemCarrito {
   id: number;
+  disponible: boolean;
   cantidad: number;
   precioUnitario: string;
   talleProductoId: number | null;
