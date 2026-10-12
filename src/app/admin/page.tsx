@@ -1,11 +1,18 @@
 import Link from "next/link";
-import { ArrowUpRight, ImageIcon, Package, ShieldCheck, Users } from "lucide-react";
+import { ArrowUpRight, ClipboardList, ImageIcon, Package, ShieldCheck, Users } from "lucide-react";
 import { exigirAdministrador } from "@/lib/autorizacion";
 
 export default async function AdminPage() {
   await exigirAdministrador();
 
   const modulos = [
+    {
+      href: "/admin/ordenes",
+      titulo: "Órdenes",
+      descripcion: "Confirmá pagos manuales y gestioná preparación, entregas y cancelaciones.",
+      icono: ClipboardList,
+      etiqueta: "Ventas",
+    },
     {
       href: "/admin/imagenes",
       titulo: "Imágenes",
@@ -59,7 +66,7 @@ export default async function AdminPage() {
             <p className="font-manrope text-[10px] uppercase tracking-[0.3em] text-neutral-300">
               Estado
             </p>
-            <p className="mt-6 font-epilogue text-5xl font-black leading-none">3</p>
+            <p className="mt-6 font-epilogue text-5xl font-black leading-none">4</p>
             <p className="mt-3 text-sm text-neutral-300">Secciones operativas disponibles.</p>
           </div>
 

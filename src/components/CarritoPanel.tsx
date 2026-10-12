@@ -8,7 +8,7 @@ import type { Carrito } from "@/types/carrito";
 
 const moneda = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
 
-export default function CarritoPanel() {
+export default function CarritoPanel({ rol }: { rol: "cliente" | "admin" | null }) {
   const [carrito, setCarrito] = useState<Carrito | null>(null);
   const [mensaje, setMensaje] = useState("");
   const [mensajesStock, setMensajesStock] = useState<Record<number, string>>({});
@@ -80,7 +80,7 @@ export default function CarritoPanel() {
               return <article key={item.id} className="flex gap-4 py-5"><div className="h-28 w-24 shrink-0 bg-gray-100">{imagen && <img src={imagen} alt={nombre} className="h-full w-full object-cover" />}</div><div className="flex min-w-0 flex-1 flex-col justify-between"><div><h2 className="font-epilogue text-lg font-bold uppercase">{nombre}</h2>{!item.disponible && <p className="mt-1 text-sm font-semibold text-red-700">No disponible</p>}{variante && <p className="mt-1 text-sm text-gray-500">{variante.color.nombre} / {variante.talle.valor}</p>}<p className="mt-2 text-sm">{moneda.format(Number(item.precioUnitario))}</p></div><div className="mt-4 flex items-center justify-between"><div><div className="flex items-center border border-black"><button type="button" aria-label="Reducir cantidad" onClick={() => item.cantidad > 1 && actualizarItem(item.id, item.cantidad - 1)} className="p-2 disabled:opacity-30" disabled={item.cantidad <= 1}><Minus size={14} /></button><span className="min-w-8 text-center text-sm">{item.cantidad}</span><button type="button" aria-label="Aumentar cantidad" onClick={() => actualizarItem(item.id, item.cantidad + 1)} className="p-2 disabled:opacity-30" disabled={!item.disponible}><Plus size={14} /></button></div>{mensajesStock[item.id] && <p className="mt-2 text-sm text-red-700" role="alert">{mensajesStock[item.id]}</p>}</div><button type="button" aria-label={`Eliminar ${nombre}`} onClick={() => eliminarItem(item.id)} className="text-gray-500 hover:text-black"><Trash2 size={18} /></button></div></div></article>;
             })}
           </div>
-          <aside className="h-fit border-t-2 border-black pt-5"><div className="flex justify-between font-epilogue text-xl font-bold uppercase"><span>Subtotal</span><span>{moneda.format(carrito.subtotal)}</span></div><p className="mt-3 text-sm text-gray-500">El envío y el pago se calculan al confirmar la compra.</p><Link href="/categorias" className="mt-7 block w-full border border-black px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.2em] text-black">Seguir Comprando</Link><button type="button" disabled className="mt-3 w-full bg-black px-5 py-4 text-xs font-bold uppercase tracking-[0.2em] text-white opacity-40">Checkout próximamente</button></aside>
+          <aside className="h-fit border-t-2 border-black pt-5"><div className="flex justify-between font-epilogue text-xl font-bold uppercase"><span>Subtotal del carrito</span><span>{moneda.format(carrito.subtotal)}</span></div><p className="mt-3 text-sm text-gray-500">Revisá los precios vigentes antes de confirmar. El costo de envío se coordina aparte.</p><Link href="/categorias" className="mt-7 block w-full border border-black px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.2em] text-black">Seguir Comprando</Link>{rol === "cliente" && <Link href="/checkout" className="mt-3 block w-full bg-black px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.2em] text-white">Revisar compra</Link>}</aside>
         </div>
       )}
     </section>

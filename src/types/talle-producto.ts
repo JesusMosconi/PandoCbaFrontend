@@ -1,6 +1,7 @@
 export interface TalleProducto {
   id: number;
   stock: number;
+  stockDisponible: number;
   estado: string;
   productoId: number;
   talleId: number;

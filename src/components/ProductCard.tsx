@@ -6,7 +6,7 @@ type ProductCardProps = {
 };
 
 export default function ProductCard({ producto }: ProductCardProps) {
-  const availableSizes = [...new Set(producto.talles.filter(({ stock }) => stock > 0).map(({ talle }) => talle.valor))];
+  const availableSizes = [...new Set(producto.talles.filter(({ stockDisponible, estado }) => stockDisponible > 0 && estado !== "inactivo").map(({ talle }) => talle.valor))];
   const image = producto.imagenes[0];
 
   return (
