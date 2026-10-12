@@ -1,36 +1,47 @@
-import { NextRequest, NextResponse } from "next/server";
-import { exigirAdministrador } from "@/lib/autorizacion";
-import { obtenerTokenSesion } from "@/lib/session";
-
-const apiUrl = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
+import { NextRequest } from "next/server";
+import { obtenerSesion, obtenerTokenSesion } from "@/lib/session";
+import { reenviarAExpress } from "@/lib/api";
 
 async function reenviar(request: NextRequest, { params }: { params: Promise<{ ruta: string[] }> }) {
-  await exigirAdministrador();
-
+  let usuario;
+  try {
+    usuario = await obtenerSesion();
+  } catch {
+    return Response.json({ message: "No pudimos verificar la sesión. Reintentá." },
+      { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
+  if (!usuario) return Response.json({ message: "No autorizado" },
+    { status: 401, headers: { "Cache-Control": "no-store" } });
+  if (usuario.rol !== "admin") return Response.json({ message: "Sin permisos" },
+    { status: 403, headers: { "Cache-Control": "no-store" } });
   const token = await obtenerTokenSesion();
-  if (!token) return NextResponse.json({ message: "No autorizado" }, { status: 401 });
-  if (!apiUrl) return NextResponse.json({ message: "API no configurada" }, { status: 500 });
+  if (!token) return Response.json({ message: "No autorizado" },
+    { status: 401, headers: { "Cache-Control": "no-store" } });
 
   const { ruta } = await params;
-  const headers = new Headers({ Authorization: `Bearer ${token}` });
+  const destino = ruta[0] === "ordenes" ? ["admin", ...ruta] : ruta;
+  const headers = new Headers();
   const contentType = request.headers.get("content-type");
   if (contentType) headers.set("Content-Type", contentType);
 
-  const respuesta = await fetch(`${apiUrl}/${ruta.map(encodeURIComponent).join("/")}${request.nextUrl.search}`, {
-    method: request.method,
-    headers,
-    body: request.method === "GET" || request.method === "HEAD" ? undefined : await request.arrayBuffer(),
-    cache: "no-store",
-  });
-
-  const respuestaHeaders = new Headers();
-  const respuestaContentType = respuesta.headers.get("content-type");
-  if (respuestaContentType) respuestaHeaders.set("Content-Type", respuestaContentType);
-
-  return new NextResponse(await respuesta.arrayBuffer(), {
-    status: respuesta.status,
-    headers: respuestaHeaders,
-  });
+  try {
+    const respuesta = await reenviarAExpress(
+      `${destino.map(encodeURIComponent).join("/")}${request.nextUrl.search}`,
+      token,
+      {
+        method: request.method,
+        headers,
+        body: request.method === "GET" || request.method === "HEAD" ? undefined : await request.arrayBuffer(),
+      },
+    );
+    const respuestaHeaders = new Headers({ "Cache-Control": "no-store" });
+    const respuestaContentType = respuesta.headers.get("content-type");
+    if (respuestaContentType) respuestaHeaders.set("Content-Type", respuestaContentType);
+    return new Response(await respuesta.arrayBuffer(), { status: respuesta.status, headers: respuestaHeaders });
+  } catch {
+    return Response.json({ message: "No pudimos contactar la API. Reintentá." },
+      { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
 }
 
 export const GET = reenviar;

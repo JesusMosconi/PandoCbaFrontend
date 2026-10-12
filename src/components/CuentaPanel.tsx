@@ -4,12 +4,14 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError, apiFetchInterna } from "@/lib/api";
 import type { Usuario } from "@/types/usuario";
+import MisOrdenes from "@/components/MisOrdenes";
 
 type CuentaPanelProps = {
   usuarioInicial: Usuario;
+  mostrarOrdenes: boolean;
 };
 
-export default function CuentaPanel({ usuarioInicial }: CuentaPanelProps) {
+export default function CuentaPanel({ usuarioInicial, mostrarOrdenes }: CuentaPanelProps) {
   const router = useRouter();
   const [usuario, setUsuario] = useState<Usuario>(usuarioInicial);
   const [mensajePerfil, setMensajePerfil] = useState("");
@@ -93,6 +95,7 @@ export default function CuentaPanel({ usuarioInicial }: CuentaPanelProps) {
             <button className="border border-black px-5 py-4 font-manrope text-xs font-bold uppercase tracking-[0.16em]">Actualizar contraseña</button>
           </form>
         </div>
+        {mostrarOrdenes && <MisOrdenes />}
       </div>
     </section>
   );

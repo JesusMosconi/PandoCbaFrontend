@@ -11,7 +11,7 @@ type ProductVariantsProps = {
 
 export default function ProductVariants({ talles }: ProductVariantsProps) {
   const router = useRouter();
-  const disponibles = useMemo(() => talles.filter((variante) => variante.stock > 0), [talles]);
+  const disponibles = useMemo(() => talles.filter((variante) => variante.stockDisponible > 0 && variante.estado !== "inactivo"), [talles]);
   const colores = useMemo(
     () => [...new Map(disponibles.map((variante) => [variante.color.hex, variante.color])).values()],
     [disponibles]

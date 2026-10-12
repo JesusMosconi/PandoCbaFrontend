@@ -6,5 +6,5 @@ export default async function CuentaPage() {
   const usuario = await obtenerSesion();
   if (!usuario) redirect("/login");
 
-  return <CuentaPanel usuarioInicial={usuario} />;
+  return <CuentaPanel usuarioInicial={usuario} mostrarOrdenes={usuario.rol === "cliente"} />;
 }
