@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { apiFetchAdmin } from "@/lib/api";
+import { useConfirmacion } from "@/components/useConfirmacion";
 import type { Categoria } from "@/types/categoria";
 import type { Coleccion } from "@/types/coleccion";
 import type { ContenidoInicio } from "@/types/contenido-inicio";
@@ -77,6 +78,7 @@ export default function AdminImagenes({ categorias, colecciones, contenidos, ima
     },
   ]);
   const [procesando, setProcesando] = useState<string | null>(null);
+  const { confirmar, dialogo } = useConfirmacion();
   const [mensajes, setMensajes] = useState<Record<string, { tipo: "ok" | "error"; texto: string }>>({});
 
   function actualizarImagen(tipo: TipoEntidad, id: number, imagenUrl: string | null) {
@@ -139,7 +141,7 @@ export default function AdminImagenes({ categorias, colecciones, contenidos, ima
   }
 
   async function eliminarImagen(tipo: TipoEntidad, id: number) {
-    if (!window.confirm("¿Querés eliminar esta imagen?")) return;
+    if (!await confirmar("¿Querés eliminar esta imagen?", { accion: "Eliminar", destructiva: true })) return;
 
     const key = claveItem(tipo, id);
     setProcesando(key);
@@ -251,6 +253,7 @@ export default function AdminImagenes({ categorias, colecciones, contenidos, ima
           )}
         </section>
       ))}
+      {dialogo}
     </div>
   );
 }

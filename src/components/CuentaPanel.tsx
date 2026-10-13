@@ -16,6 +16,8 @@ export default function CuentaPanel({ usuarioInicial, mostrarOrdenes }: CuentaPa
   const [usuario, setUsuario] = useState<Usuario>(usuarioInicial);
   const [mensajePerfil, setMensajePerfil] = useState("");
   const [mensajePassword, setMensajePassword] = useState("");
+  const [mensajeSesion, setMensajeSesion] = useState("");
+  const [cerrandoSesion, setCerrandoSesion] = useState(false);
 
   async function actualizarPerfil(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -59,10 +61,18 @@ export default function CuentaPanel({ usuarioInicial, mostrarOrdenes }: CuentaPa
   }
 
   async function cerrarSesion() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.dispatchEvent(new Event("sesion-cerrada"));
-    router.push("/");
-    router.refresh();
+    setCerrandoSesion(true);
+    setMensajeSesion("");
+    try {
+      const respuesta = await fetch("/api/auth/logout", { method: "POST" });
+      if (!respuesta.ok) throw new Error("No pudimos cerrar la sesión. Intentá de nuevo.");
+      window.dispatchEvent(new Event("sesion-cerrada"));
+      router.push("/");
+      router.refresh();
+    } catch {
+      setMensajeSesion("No pudimos cerrar la sesión. Intentá de nuevo.");
+      setCerrandoSesion(false);
+    }
   }
 
   return (
@@ -74,7 +84,12 @@ export default function CuentaPanel({ usuarioInicial, mostrarOrdenes }: CuentaPa
             <h1 className="font-epilogue text-4xl font-bold uppercase tracking-[-0.04em]">Hola, {usuario.nombre}</h1>
             <p className="mt-2 text-sm text-[#6B7280]">{usuario.email}</p>
           </div>
-          <button type="button" onClick={cerrarSesion} className="border border-black px-4 py-3 font-manrope text-xs font-bold uppercase tracking-[0.14em]">Cerrar sesion</button>
+          <div className="sm:text-right">
+            <button type="button" disabled={cerrandoSesion} onClick={cerrarSesion} className="border border-black px-4 py-3 font-manrope text-xs font-bold uppercase tracking-[0.14em] disabled:cursor-wait disabled:opacity-60">
+              {cerrandoSesion ? "Cerrando sesión..." : "Cerrar sesión"}
+            </button>
+            {mensajeSesion && <p className="mt-2 text-sm text-red-700" role="alert">{mensajeSesion}</p>}
+          </div>
         </div>
         <div className="mt-10 grid gap-12 lg:grid-cols-2">
           <form onSubmit={actualizarPerfil} className="space-y-5">

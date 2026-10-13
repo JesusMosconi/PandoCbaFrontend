@@ -5,6 +5,7 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ApiError, apiFetchInterna } from "@/lib/api";
 import type { Carrito } from "@/types/carrito";
+import { useConfirmacion } from "@/components/useConfirmacion";
 
 const moneda = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
 
@@ -13,6 +14,7 @@ export default function CarritoPanel({ rol }: { rol: "cliente" | "admin" | null 
   const [mensaje, setMensaje] = useState("");
   const [mensajesStock, setMensajesStock] = useState<Record<number, string>>({});
   const [cargando, setCargando] = useState(true);
+  const { confirmar, dialogo } = useConfirmacion();
 
   useEffect(() => {
     apiFetchInterna<Carrito>("/api/carrito")
@@ -45,7 +47,7 @@ export default function CarritoPanel({ rol }: { rol: "cliente" | "admin" | null 
   }
 
   async function vaciar() {
-    if (!window.confirm("¿Estás seguro de que querés vaciar el carrito?")) return;
+    if (!await confirmar("¿Estás seguro de que querés vaciar el carrito?", { accion: "Vaciar carrito", destructiva: true })) return;
 
     try {
       setCarrito(await apiFetchInterna<Carrito>("/api/carrito", { method: "DELETE" }));
@@ -83,6 +85,7 @@ export default function CarritoPanel({ rol }: { rol: "cliente" | "admin" | null 
           <aside className="h-fit border-t-2 border-black pt-5"><div className="flex justify-between font-epilogue text-xl font-bold uppercase"><span>Subtotal del carrito</span><span>{moneda.format(carrito.subtotal)}</span></div><p className="mt-3 text-sm text-gray-500">Revisá los precios vigentes antes de confirmar. El costo de envío se coordina aparte.</p><Link href="/categorias" className="mt-7 block w-full border border-black px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.2em] text-black">Seguir Comprando</Link>{rol === "cliente" && <Link href="/checkout" className="mt-3 block w-full bg-black px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.2em] text-white">Revisar compra</Link>}</aside>
         </div>
       )}
+      {dialogo}
     </section>
   );
 }

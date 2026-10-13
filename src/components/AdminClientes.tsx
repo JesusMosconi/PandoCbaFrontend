@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { apiFetchAdmin, ApiError } from "@/lib/api";
 import { normalizarRespuestaUsuarios } from "@/lib/usuarios";
 import type { UsuarioAdmin, UsuariosAdminRespuesta } from "@/types/usuario";
+import { useConfirmacion } from "@/components/useConfirmacion";
 
 type Props = { respuestaInicial: UsuariosAdminRespuesta };
 type Mensaje = { tipo: "ok" | "error"; texto: string };
@@ -28,6 +29,7 @@ export default function AdminClientes({ respuestaInicial }: Props) {
   const [detalle, setDetalle] = useState<UsuarioAdmin | null>(null);
   const [cargando, setCargando] = useState(false);
   const [mensaje, setMensaje] = useState<Mensaje | null>(null);
+  const { confirmar, dialogo } = useConfirmacion();
 
   useEffect(() => {
     const parametros = new URLSearchParams({ pagina: String(pagina), limite: "20", orden, direccion });
@@ -61,7 +63,10 @@ export default function AdminClientes({ respuestaInicial }: Props) {
   }
 
   async function cambiarEstado(usuario: UsuarioAdmin) {
-    if (!window.confirm(`¿Querés ${usuario.activo ? "desactivar" : "activar"} a ${usuario.nombre}?`)) return;
+    if (!await confirmar(`¿Querés ${usuario.activo ? "desactivar" : "activar"} a ${usuario.nombre}?`, {
+      accion: usuario.activo ? "Desactivar" : "Activar",
+      destructiva: usuario.activo,
+    })) return;
     try {
       const actualizado = await apiFetchAdmin<UsuarioAdmin>(`/admin/usuarios/${usuario.id}/estado`, { method: "PATCH", body: JSON.stringify({ activo: !usuario.activo }) });
       setRespuesta((actual) => ({ ...actual, usuarios: actual.usuarios.map((item) => item.id === usuario.id ? { ...item, activo: actualizado.activo } : item) }));
@@ -73,7 +78,7 @@ export default function AdminClientes({ respuestaInicial }: Props) {
   }
 
   async function cambiarRol(usuario: UsuarioAdmin, nuevoRol: "cliente" | "admin") {
-    if (nuevoRol === usuario.rol || !window.confirm("¿Querés cambiar el rol de este usuario?")) return;
+    if (nuevoRol === usuario.rol || !await confirmar("¿Querés cambiar el rol de este usuario?", { accion: "Cambiar rol" })) return;
     try {
       const actualizado = await apiFetchAdmin<UsuarioAdmin>(`/admin/usuarios/${usuario.id}/rol`, { method: "PUT", body: JSON.stringify({ rol: nuevoRol }) });
       setRespuesta((actual) => ({ ...actual, usuarios: actual.usuarios.map((item) => item.id === usuario.id ? { ...item, rol: actualizado.rol } : item) }));
@@ -99,6 +104,7 @@ export default function AdminClientes({ respuestaInicial }: Props) {
       </div>
       <div className="flex items-center justify-between py-5 text-sm"><span>{respuesta.total} usuarios</span><div className="flex items-center gap-3"><button className="border border-black px-3 py-2 disabled:opacity-40" disabled={pagina <= 1} onClick={() => setPagina((actual) => actual - 1)}>Anterior</button><span>{pagina} / {Math.max(respuesta.paginas, 1)}</span><button className="border border-black px-3 py-2 disabled:opacity-40" disabled={pagina >= respuesta.paginas} onClick={() => setPagina((actual) => actual + 1)}>Siguiente</button></div></div>
       {detalle && <div className="mt-4 border-2 border-black bg-white p-6"><div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-widest text-neutral-500">Detalle de cliente</p><h2 className="mt-2 font-epilogue text-3xl font-black uppercase">{detalle.nombre} {detalle.apellido}</h2></div><button className="border border-black px-3 py-2 text-xs font-bold uppercase" onClick={() => setDetalle(null)}>Cerrar</button></div><dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2"><div><dt className="font-bold uppercase text-neutral-500">Email</dt><dd>{detalle.email}</dd></div><div><dt className="font-bold uppercase text-neutral-500">Teléfono</dt><dd>{detalle.telefono || "No informado"}</dd></div><div><dt className="font-bold uppercase text-neutral-500">Rol</dt><dd>{detalle.rol}</dd></div><div><dt className="font-bold uppercase text-neutral-500">Estado</dt><dd>{detalle.activo ? "Activo" : "Inactivo"}</dd></div><div><dt className="font-bold uppercase text-neutral-500">Registro</dt><dd>{fecha(detalle.fechaCreado)}</dd></div><div><dt className="font-bold uppercase text-neutral-500">Pedidos</dt><dd>{detalle._count?.ordenes ?? 0}</dd></div><div><dt className="font-bold uppercase text-neutral-500">Favoritos</dt><dd>{detalle._count?.favoritos ?? 0}</dd></div></dl></div>}
+      {dialogo}
     </section>
   );
 }

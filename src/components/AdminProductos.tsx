@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { apiFetchAdmin } from "@/lib/api";
+import { useConfirmacion } from "@/components/useConfirmacion";
 import type { Categoria } from "@/types/categoria";
 import type { Coleccion } from "@/types/coleccion";
 import type { Color } from "@/types/color";
@@ -77,6 +78,25 @@ export default function AdminProductos({
   const [procesando, setProcesando] = useState<string | null>(null);
   const [talleEditandoId, setTalleEditandoId] = useState<number | null>(null);
   const [colorEditandoId, setColorEditandoId] = useState<number | null>(null);
+  const formularioRef = useRef<HTMLFormElement>(null);
+  const { confirmar, dialogo } = useConfirmacion();
+
+  useEffect(() => {
+    if (!formVisible) return;
+    formularioRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    formularioRef.current?.querySelector<HTMLElement>("input, select, textarea")?.focus({ preventScroll: true });
+  }, [formVisible, editandoId]);
+
+  useEffect(() => {
+    function cerrarDetalleAlHacerClickAfuera(event: PointerEvent) {
+      if (event.target instanceof Element && event.target.closest("[data-product-detail-panel], [data-product-detail-trigger]")) return;
+      setExpandidoId(null);
+      setImagenesExpandidoId(null);
+    }
+
+    document.addEventListener("pointerdown", cerrarDetalleAlHacerClickAfuera);
+    return () => document.removeEventListener("pointerdown", cerrarDetalleAlHacerClickAfuera);
+  }, []);
 
   function mostrarMensaje(clave: string, mensaje?: Mensaje) {
     setMensajes((actuales) => {
@@ -157,7 +177,7 @@ export default function AdminProductos({
   }
 
   async function eliminarProducto(id: number) {
-    if (!window.confirm("\u00bfQuer\u00e9s desactivar este producto?")) return;
+    if (!await confirmar("¿Querés desactivar este producto?", { accion: "Desactivar", destructiva: true })) return;
     const clave = `producto-${id}`;
     setProcesando(clave);
     mostrarMensaje(clave);
@@ -190,6 +210,7 @@ export default function AdminProductos({
     }
 
     setImagenesExpandidoId(productoId);
+    setExpandidoId(null);
     if (imagenesPorProducto[productoId] !== undefined) return;
 
     const clave = `imagenes-carga-${productoId}`;
@@ -245,7 +266,7 @@ export default function AdminProductos({
   }
 
   async function eliminarImagen(productoId: number, imagenId: number) {
-    if (!window.confirm("¿Querés eliminar esta imagen?")) return;
+    if (!await confirmar("¿Querés eliminar esta imagen?", { accion: "Eliminar", destructiva: true })) return;
     const clave = `imagen-${imagenId}`;
     setProcesando(clave);
     mostrarMensaje(`imagenes-${productoId}`);
@@ -339,7 +360,7 @@ export default function AdminProductos({
   }
 
   async function eliminarVariante(productoId: number, varianteId: number) {
-    if (!window.confirm("\u00bfQuer\u00e9s desactivar esta variante?")) return;
+    if (!await confirmar("¿Querés desactivar esta variante?", { accion: "Desactivar", destructiva: true })) return;
     const clave = `variante-${varianteId}`;
     setProcesando(clave);
     mostrarMensaje(clave);
@@ -425,7 +446,7 @@ export default function AdminProductos({
   }
 
   async function eliminarTalle(id: number) {
-    if (!window.confirm("\u00bfQuer\u00e9s eliminar este talle?")) return;
+    if (!await confirmar("¿Querés eliminar este talle?", { accion: "Eliminar", destructiva: true })) return;
     const clave = `talle-${id}`;
     setProcesando(clave);
     mostrarMensaje(clave);
@@ -461,7 +482,7 @@ export default function AdminProductos({
   }
 
   async function eliminarColor(id: number) {
-    if (!window.confirm("\u00bfQuer\u00e9s eliminar este color?")) return;
+    if (!await confirmar("¿Querés eliminar este color?", { accion: "Eliminar", destructiva: true })) return;
     const clave = `color-${id}`;
     setProcesando(clave);
     mostrarMensaje(clave);
@@ -488,7 +509,7 @@ export default function AdminProductos({
         <MensajeEstado mensaje={mensajes.productos} />
 
         {formVisible && (
-          <form onSubmit={guardarProducto} className="mt-6 grid gap-4 border-2 border-black bg-white p-5 sm:grid-cols-2 lg:grid-cols-4">
+          <form ref={formularioRef} onSubmit={guardarProducto} className="mt-6 scroll-mt-6 grid gap-4 border-2 border-black bg-white p-5 sm:grid-cols-2 lg:grid-cols-4">
             <h3 className="font-epilogue text-lg font-bold uppercase sm:col-span-2 lg:col-span-4">
               {editandoId ? `Editar producto #${editandoId}` : "Nuevo producto"}
             </h3>
@@ -542,7 +563,10 @@ export default function AdminProductos({
                   mensajes={mensajes}
                   onEditar={() => abrirEdicion(producto)}
                   onEliminar={() => eliminarProducto(producto.id)}
-                  onExpandir={() => setExpandidoId(expandidoId === producto.id ? null : producto.id)}
+                  onExpandir={() => {
+                    setExpandidoId((actual) => actual === producto.id ? null : producto.id);
+                    setImagenesExpandidoId(null);
+                  }}
                   onExpandirImagenes={() => toggleImagenes(producto.id)}
                   onSubirImagenes={subirImagenes}
                   onEliminarImagen={eliminarImagen}
@@ -621,6 +645,7 @@ export default function AdminProductos({
           </section>
         </div>
       </details>
+      {dialogo}
     </div>
   );
 }
@@ -665,11 +690,11 @@ function FragmentoProducto(props: FilaProps) {
       <td className="px-3 py-3"><div className="flex flex-wrap gap-2">
         <button type="button" onClick={props.onEditar} className="text-xs font-bold uppercase underline">Editar</button>
         <button type="button" disabled={props.procesando === `producto-${producto.id}`} onClick={props.onEliminar} className="text-xs font-bold uppercase text-red-700 underline disabled:opacity-50">Eliminar</button>
-        <button type="button" onClick={props.onExpandirImagenes} className="text-xs font-bold uppercase underline">{props.imagenesExpandido ? "Ocultar imágenes" : "Imágenes"}</button>
-        <button type="button" onClick={props.onExpandir} className="text-xs font-bold uppercase underline">{props.expandido ? "Ocultar variantes" : "Ver variantes"}</button>
+        <button type="button" data-product-detail-trigger onClick={props.onExpandirImagenes} className="text-xs font-bold uppercase underline">{props.imagenesExpandido ? "Ocultar imágenes" : "Imágenes"}</button>
+        <button type="button" data-product-detail-trigger onClick={props.onExpandir} className="text-xs font-bold uppercase underline">{props.expandido ? "Ocultar variantes" : "Ver variantes"}</button>
       </div>{props.mensajes[`producto-${producto.id}`] && <p className={`mt-2 text-xs ${props.mensajes[`producto-${producto.id}`].tipo === "ok" ? "text-green-700" : "text-red-700"}`}>{props.mensajes[`producto-${producto.id}`].texto}</p>}</td>
     </tr>
-    {props.imagenesExpandido && <tr className="border-b-2 border-black bg-neutral-100"><td colSpan={10} className="p-5">
+    {props.imagenesExpandido && <tr className="border-b-2 border-black bg-neutral-100"><td colSpan={10} className="p-5" data-product-detail-panel>
       {props.procesando === `imagenes-carga-${producto.id}` && props.imagenes === undefined ? (
         <p className="text-xs font-bold uppercase text-neutral-500">Cargando imágenes...</p>
       ) : (
@@ -697,7 +722,7 @@ function FragmentoProducto(props: FilaProps) {
         </>
       )}
     </td></tr>}
-    {props.expandido && <tr className="border-b-2 border-black bg-neutral-100"><td colSpan={10} className="p-5">
+    {props.expandido && <tr className="border-b-2 border-black bg-neutral-100"><td colSpan={10} className="p-5" data-product-detail-panel>
       <div className="overflow-x-auto"><table className="w-full min-w-[700px] bg-white text-sm"><thead><tr className="border-b-2 border-black text-xs uppercase tracking-wider"><th className="p-2">Talle</th><th className="p-2">Color</th><th className="p-2">Stock</th><th className="p-2">Estado</th><th className="p-2">Acciones</th></tr></thead><tbody>
         {producto.talles.map((variante) => <tr key={variante.id} className={`border-b border-neutral-300 ${variante.estado === "inactivo" ? "opacity-50" : ""}`}>
           <td className="p-2">{variante.talle.valor}</td><td className="p-2"><span className="inline-flex items-center gap-2"><span className="h-4 w-4 border border-black" style={{ backgroundColor: variante.color.hex }} />{variante.color.nombre}</span></td>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ApiError, apiFetchAdmin } from "@/lib/api";
 import type { OrdenAdmin, PaginaOrdenesAdmin } from "@/types/orden";
 import { tituloEstadoOrden } from "@/lib/estado-orden";
+import { useConfirmacion } from "@/components/useConfirmacion";
 
 const moneda = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
 const fecha = (valor: string | null) => valor ? new Date(valor).toLocaleString("es-AR") : "No disponible";
@@ -19,6 +20,7 @@ export default function AdminOrdenes() {
   const [motivo, setMotivo] = useState("");
   const [restituirStock, setRestituirStock] = useState("");
   const [envioCoordinado, setEnvioCoordinado] = useState(false);
+  const { confirmar, dialogo } = useConfirmacion();
 
   async function cargar(numero = 1) {
     setCargando(true);
@@ -168,12 +170,13 @@ export default function AdminOrdenes() {
           <select value={restituirStock} onChange={(event) => setRestituirStock(event.target.value)} className="mt-1 block border border-black p-2"><option value="">Elegir</option><option value="si">Sí</option><option value="no">No</option></select>
         </label>}
         <button type="button" disabled={ocupado || !motivo.trim() || Boolean(pagada && !restituirStock)}
-          onClick={() => { if (window.confirm(`¿Cancelar la orden #${detalle.id}?`)) void accion("cancelacion", "POST", { motivo: motivo.trim(), ...(pagada ? { restituirStock: restituirStock === "si" } : {}) }); }}
+          onClick={async () => { if (await confirmar(`¿Cancelar la orden #${detalle.id}?`, { accion: "Cancelar orden", destructiva: true })) void accion("cancelacion", "POST", { motivo: motivo.trim(), ...(pagada ? { restituirStock: restituirStock === "si" } : {}) }); }}
           className="mt-4 border border-red-700 px-4 py-2 text-sm font-bold text-red-700 disabled:opacity-40">Cancelar orden</button>
       </div>}
 
       <h3 className="mt-8 border-t border-black pt-5 font-bold uppercase">Historial de estados</h3>
       <ol className="mt-3 space-y-3">{detalle.eventos.map((evento, indice) => <li key={`${evento.fecha}-${indice}`} className="border-l-2 border-black pl-3 text-sm"><strong>{tituloEstadoOrden(evento.estadoNuevo)}</strong> · {fecha(evento.fecha)} · {evento.origen}{evento.actorUsuarioId ? ` · ${evento.actorNombre ?? "Usuario no disponible"}` : ""}{evento.motivo ? ` · ${evento.motivo}` : ""}{evento.restituirStock !== null ? ` · Restituir stock: ${evento.restituirStock ? "sí" : "no"}` : ""}</li>)}</ol>
     </article>}
+    {dialogo}
   </section>;
 }
