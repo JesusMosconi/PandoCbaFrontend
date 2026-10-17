@@ -223,7 +223,7 @@ export default function CheckoutPanel() {
         {tipoEntrega === "envio" ? <><p className="mt-2">Envío: costo a coordinar</p><p className="mt-2 font-semibold">Total final pendiente de coordinación.</p></>
           : <p className="mt-2 flex justify-between"><span>Total</span><strong>{moneda.format(Number(resumen.totalFinal))}</strong></p>}
       </div>
-      <p className="mt-4 text-sm text-gray-700">Si confirmás, los productos quedarán reservados por cinco días corridos (120 horas). La fecha de vencimiento aparecerá en la orden creada.</p>
+      <p className="mt-4 text-sm text-gray-700">Si confirmás, los productos quedarán reservados por un día (24 horas). La fecha de vencimiento aparecerá en la orden creada.</p>
       <label className="mt-6 flex items-start gap-2"><input type="checkbox" checked={aceptaPrecio} disabled={!resumenVigente} onChange={(event) => setAceptaPrecio(event.target.checked)} /> Acepto explícitamente los precios vigentes y el importe conocido de esta compra.</label>
       {!resumen.puedeConfirmar && <p className="mt-4 text-red-700">Corregí los ítems indicados en el carrito para continuar.</p>}
       <button type="button" onClick={() => void confirmar()} disabled={!resumenVigente || !resumen.puedeConfirmar || !aceptaPrecio || enviando}
