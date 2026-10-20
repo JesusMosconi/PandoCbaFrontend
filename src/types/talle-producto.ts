@@ -1,6 +1,7 @@
 export interface TalleProducto {
   id: number;
   stock: number;
+  inicioInventarioCero?: boolean;
   stockDisponible: number;
   estado: string;
   productoId: number;

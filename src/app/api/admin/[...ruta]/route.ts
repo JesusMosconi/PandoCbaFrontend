@@ -19,7 +19,9 @@ async function reenviar(request: NextRequest, { params }: { params: Promise<{ ru
     { status: 401, headers: { "Cache-Control": "no-store" } });
 
   const { ruta } = await params;
-  const destino = ruta[0] === "ordenes" ? ["admin", ...ruta] : ruta;
+  const prefijosAdministrativos = new Set(["ordenes", "proveedores", "compras", "inventario", "informes"]);
+  const historialProducto = ruta[0] === "productos" && ruta.length === 3 && ruta[2] === "historial";
+  const destino = prefijosAdministrativos.has(ruta[0]) || historialProducto ? ["admin", ...ruta] : ruta;
   const headers = new Headers();
   const contentType = request.headers.get("content-type");
   if (contentType) headers.set("Content-Type", contentType);

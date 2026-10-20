@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { apiFetchAdmin } from "@/lib/api";
 import type { Categoria } from "@/types/categoria";
@@ -8,6 +9,7 @@ import type { Color } from "@/types/color";
 import type { Producto } from "@/types/producto";
 import type { Talle } from "@/types/talle";
 import type { TalleProducto } from "@/types/talle-producto";
+import type { HistorialInventarioVariante } from "@/types/inventario";
 
 type Props = {
   productos: Producto[];
@@ -75,6 +77,9 @@ export default function AdminProductos({
   const [imagenesPorProducto, setImagenesPorProducto] = useState<Record<number, ImagenProducto[]>>({});
   const [mensajes, setMensajes] = useState<Record<string, Mensaje>>({});
   const [procesando, setProcesando] = useState<string | null>(null);
+  const [historialAbiertoId, setHistorialAbiertoId] = useState<number | null>(null);
+  const [historialPorVariante, setHistorialPorVariante] = useState<Record<number, HistorialInventarioVariante>>({});
+  const [historialCargandoId, setHistorialCargandoId] = useState<number | null>(null);
   const [talleEditandoId, setTalleEditandoId] = useState<number | null>(null);
   const [colorEditandoId, setColorEditandoId] = useState<number | null>(null);
 
@@ -309,29 +314,35 @@ export default function AdminProductos({
     }
   }
 
-  async function guardarStock(event: FormEvent<HTMLFormElement>, productoId: number, variante: TalleProducto) {
+  async function registrarAjuste(event: FormEvent<HTMLFormElement>, productoId: number, variante: TalleProducto) {
     event.preventDefault();
-    const stock = Number(new FormData(event.currentTarget).get("stock"));
+    const form = event.currentTarget;
+    const datos = new FormData(form);
+    const cantidad = Number(datos.get("cantidad"));
+    const tipo = String(datos.get("tipo"));
+    const motivo = String(datos.get("motivo") ?? "").trim();
+    const costoUnitario = String(datos.get("costoUnitario") ?? "").trim();
     const clave = `variante-${variante.id}`;
     setProcesando(clave);
     mostrarMensaje(clave);
     try {
-      const actualizada = await apiFetchAdmin<TalleProducto>(`/talle-producto/${variante.id}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          stock,
-          estado: variante.estado,
-          productoId: variante.productoId,
-          talleId: variante.talleId,
-          colorId: variante.colorId,
-        }),
+      const ajuste = await apiFetchAdmin<{ fisico: number }>("/inventario/ajustes", {
+        method: "POST",
+        body: JSON.stringify({ varianteId: variante.id, tipo, cantidad, motivo,
+          ...(costoUnitario ? { costoUnitario } : {}) }),
       });
-      actualizarVariante(productoId, actualizada);
-      mostrarMensaje(clave, { tipo: "ok", texto: "Stock guardado." });
+      actualizarVariante(productoId, { ...variante, stock: ajuste.fisico });
+      setHistorialPorVariante((actuales) => {
+        const siguientes = { ...actuales };
+        delete siguientes[variante.id];
+        return siguientes;
+      });
+      form.reset();
+      mostrarMensaje(clave, { tipo: "ok", texto: "Ajuste de inventario registrado." });
     } catch (error) {
       mostrarMensaje(clave, {
         tipo: "error",
-        texto: error instanceof Error ? error.message : "No se pudo guardar el stock.",
+        texto: error instanceof Error ? error.message : "No se pudo registrar el ajuste.",
       });
     } finally {
       setProcesando(null);
@@ -354,6 +365,29 @@ export default function AdminProductos({
       });
     } finally {
       setProcesando(null);
+    }
+  }
+
+  async function verHistorial(varianteId: number, pagina = 1) {
+    if (pagina === 1 && historialAbiertoId === varianteId) {
+      setHistorialAbiertoId(null);
+      return;
+    }
+    setHistorialAbiertoId(varianteId);
+    setHistorialCargandoId(varianteId);
+    mostrarMensaje(`historial-${varianteId}`);
+    try {
+      const respuesta = await apiFetchAdmin<HistorialInventarioVariante>(
+        `/inventario/variantes/${varianteId}?pagina=${pagina}&limite=20`,
+      );
+      setHistorialPorVariante((actuales) => ({ ...actuales, [varianteId]: pagina === 1
+        ? respuesta : { ...respuesta,
+          movimientos: [...(actuales[varianteId]?.movimientos ?? []), ...respuesta.movimientos] } }));
+    } catch (error) {
+      mostrarMensaje(`historial-${varianteId}`, { tipo: "error",
+        texto: error instanceof Error ? error.message : "No se pudo consultar el historial." });
+    } finally {
+      setHistorialCargandoId(null);
     }
   }
 
@@ -483,7 +517,10 @@ export default function AdminProductos({
             <h2 className="font-epilogue text-2xl font-bold uppercase sm:text-3xl">Productos</h2>
             <p className="mt-2 text-sm text-neutral-600">{"Administr\u00e1 el cat\u00e1logo y despleg\u00e1 sus variantes."}</p>
           </div>
-          <button type="button" onClick={abrirNuevo} className={botonNegro}>Nuevo producto</button>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/admin/compras" className="border-2 border-black px-4 py-2 text-xs font-bold uppercase">Crear desde Compras</Link>
+            <button type="button" onClick={abrirNuevo} className={botonNegro}>Nuevo producto</button>
+          </div>
         </div>
         <MensajeEstado mensaje={mensajes.productos} />
 
@@ -540,6 +577,10 @@ export default function AdminProductos({
                   colores={colores}
                   procesando={procesando}
                   mensajes={mensajes}
+                  historialAbiertoId={historialAbiertoId}
+                  historialPorVariante={historialPorVariante}
+                  historialCargandoId={historialCargandoId}
+                  onVerHistorial={verHistorial}
                   onEditar={() => abrirEdicion(producto)}
                   onEliminar={() => eliminarProducto(producto.id)}
                   onExpandir={() => setExpandidoId(expandidoId === producto.id ? null : producto.id)}
@@ -547,7 +588,7 @@ export default function AdminProductos({
                   onSubirImagenes={subirImagenes}
                   onEliminarImagen={eliminarImagen}
                   onAgregarVariante={agregarVariante}
-                  onGuardarStock={guardarStock}
+                  onRegistrarAjuste={registrarAjuste}
                   onEliminarVariante={eliminarVariante}
                 />
               ))}
@@ -634,6 +675,10 @@ type FilaProps = {
   colores: Color[];
   procesando: string | null;
   mensajes: Record<string, Mensaje>;
+  historialAbiertoId: number | null;
+  historialPorVariante: Record<number, HistorialInventarioVariante>;
+  historialCargandoId: number | null;
+  onVerHistorial: (varianteId: number, pagina?: number) => void;
   onEditar: () => void;
   onEliminar: () => void;
   onExpandir: () => void;
@@ -641,7 +686,7 @@ type FilaProps = {
   onSubirImagenes: (event: FormEvent<HTMLFormElement>, productoId: number) => void;
   onEliminarImagen: (productoId: number, imagenId: number) => void;
   onAgregarVariante: (event: FormEvent<HTMLFormElement>, productoId: number) => void;
-  onGuardarStock: (event: FormEvent<HTMLFormElement>, productoId: number, variante: TalleProducto) => void;
+  onRegistrarAjuste: (event: FormEvent<HTMLFormElement>, productoId: number, variante: TalleProducto) => void;
   onEliminarVariante: (productoId: number, varianteId: number) => void;
 };
 
@@ -663,6 +708,7 @@ function FragmentoProducto(props: FilaProps) {
       <td className="px-3 py-3">${producto.precio}</td><td className="px-3 py-3"><span className={badge(producto.activo)}>{producto.activo ? "S\u00ed" : "No"}</span></td>
       <td className="px-3 py-3"><span className={badge(producto.web)}>{producto.web ? "S\u00ed" : "No"}</span></td><td className="px-3 py-3 font-bold">{stockTotal}</td>
       <td className="px-3 py-3"><div className="flex flex-wrap gap-2">
+        <Link href={`/admin/compras?productoId=${producto.id}#informes`} className="text-xs font-bold uppercase underline">Historial</Link>
         <button type="button" onClick={props.onEditar} className="text-xs font-bold uppercase underline">Editar</button>
         <button type="button" disabled={props.procesando === `producto-${producto.id}`} onClick={props.onEliminar} className="text-xs font-bold uppercase text-red-700 underline disabled:opacity-50">Eliminar</button>
         <button type="button" onClick={props.onExpandirImagenes} className="text-xs font-bold uppercase underline">{props.imagenesExpandido ? "Ocultar imágenes" : "Imágenes"}</button>
@@ -701,14 +747,30 @@ function FragmentoProducto(props: FilaProps) {
       <div className="overflow-x-auto"><table className="w-full min-w-[700px] bg-white text-sm"><thead><tr className="border-b-2 border-black text-xs uppercase tracking-wider"><th className="p-2">Talle</th><th className="p-2">Color</th><th className="p-2">Stock</th><th className="p-2">Estado</th><th className="p-2">Acciones</th></tr></thead><tbody>
         {producto.talles.map((variante) => <tr key={variante.id} className={`border-b border-neutral-300 ${variante.estado === "inactivo" ? "opacity-50" : ""}`}>
           <td className="p-2">{variante.talle.valor}</td><td className="p-2"><span className="inline-flex items-center gap-2"><span className="h-4 w-4 border border-black" style={{ backgroundColor: variante.color.hex }} />{variante.color.nombre}</span></td>
-          <td className="p-2"><form className="flex gap-2" onSubmit={(event) => props.onGuardarStock(event, producto.id, variante)}><input name="stock" type="number" min="0" defaultValue={variante.stock} className="w-20 border border-black px-2 py-1" /><button disabled={props.procesando === `variante-${variante.id}`} className="bg-black px-3 py-1 text-xs font-bold uppercase text-white disabled:opacity-50">Guardar</button></form></td>
-          <td className="p-2 uppercase">{variante.estado}</td><td className="p-2"><button type="button" onClick={() => props.onEliminarVariante(producto.id, variante.id)} disabled={props.procesando === `variante-${variante.id}`} className="text-xs font-bold uppercase text-red-700 underline disabled:opacity-50">Eliminar</button>{props.mensajes[`variante-${variante.id}`] && <p className={`mt-1 text-xs ${props.mensajes[`variante-${variante.id}`].tipo === "ok" ? "text-green-700" : "text-red-700"}`}>{props.mensajes[`variante-${variante.id}`].texto}</p>}</td>
+          <td className="p-2"><span>{variante.stock}</span><form className="mt-2 flex flex-wrap gap-2" onSubmit={(event) => props.onRegistrarAjuste(event, producto.id, variante)}><select name="tipo" aria-label="Tipo de ajuste" className="border border-black px-2 py-1"><option value="positivo">Agregar</option><option value="negativo">Descontar</option></select><input name="cantidad" aria-label="Cantidad del ajuste" type="number" min="1" required className="w-20 border border-black px-2 py-1" /><input name="costoUnitario" aria-label="Costo unitario conocido para ajuste positivo" type="text" inputMode="decimal" placeholder="Costo opcional" className="w-28 border border-black px-2 py-1" /><input name="motivo" aria-label="Motivo del ajuste" type="text" maxLength={500} required placeholder="Motivo" className="min-w-32 border border-black px-2 py-1" /><button disabled={props.procesando === `variante-${variante.id}`} className="bg-black px-3 py-1 text-xs font-bold uppercase text-white disabled:opacity-50">Ajustar</button></form></td>
+          <td className="p-2 uppercase">{variante.estado}</td><td className="p-2">
+            <button type="button" onClick={() => props.onVerHistorial(variante.id)} className="mr-3 text-xs font-bold uppercase underline">{props.historialAbiertoId === variante.id ? "Ocultar historial" : "Historial"}</button>
+            <button type="button" onClick={() => props.onEliminarVariante(producto.id, variante.id)} disabled={props.procesando === `variante-${variante.id}`} className="text-xs font-bold uppercase text-red-700 underline disabled:opacity-50">Eliminar</button>
+            <MensajeEstado mensaje={props.mensajes[`variante-${variante.id}`]} />
+            <MensajeEstado mensaje={props.mensajes[`historial-${variante.id}`]} />
+            {props.historialAbiertoId === variante.id && <div className="mt-2 min-w-64 space-y-2 border-t border-neutral-300 pt-2 text-xs">
+              {props.historialCargandoId === variante.id && <p>Cargando historial...</p>}
+              {props.historialPorVariante[variante.id] && <>
+                <p>Físico: {props.historialPorVariante[variante.id].fisico} · Comprometido: {props.historialPorVariante[variante.id].comprometido} · Libre: {props.historialPorVariante[variante.id].libre}</p>
+                <p>Unidades sin costo conocido: {props.historialPorVariante[variante.id].unidadesSinCosto}</p>
+                {!props.historialPorVariante[variante.id].inventarioConciliado && <p className="text-red-700">El saldo todavía no está conciliado con partidas.</p>}
+                {props.historialPorVariante[variante.id].movimientos.length === 0 ? <p>Sin movimientos registrados.</p> : <ul className="space-y-1">{props.historialPorVariante[variante.id].movimientos.map((movimiento) => <li key={movimiento.id}>{new Date(movimiento.fecha).toLocaleDateString("es-AR")} · {movimiento.tipo} · {movimiento.cantidad > 0 ? "+" : ""}{movimiento.cantidad} · {movimiento.partida?.proveedor?.nombre ?? movimiento.partida?.origen ?? "Sin origen"}{movimiento.motivo ? ` · ${movimiento.motivo}` : ""}</li>)}</ul>}
+                {props.historialPorVariante[variante.id].movimientos.length < props.historialPorVariante[variante.id].total && <button type="button" disabled={props.historialCargandoId === variante.id} onClick={() => props.onVerHistorial(variante.id, props.historialPorVariante[variante.id].pagina + 1)} className="font-bold underline disabled:opacity-50">Cargar más</button>}
+              </>}
+            </div>}
+          </td>
         </tr>)}
       </tbody></table></div>
       <form onSubmit={(event) => props.onAgregarVariante(event, producto.id)} className="mt-5 grid gap-2 sm:grid-cols-5">
         <select required name="talleId" className={inputClass}><option value="">Talle</option>{props.talles.map((item) => <option key={item.id} value={item.id}>{item.valor}</option>)}</select>
         <select required name="colorId" className={inputClass}><option value="">Color</option>{props.colores.map((item) => <option key={item.id} value={item.id}>{item.nombre} - {item.hex}</option>)}</select>
-        <input required name="stock" type="number" min="0" defaultValue="0" className={inputClass} />
+        <input name="stock" type="hidden" value="0" />
+        <span className="self-center text-xs font-semibold">Stock inicial: 0</span>
         <select name="estado" defaultValue="activo" className={inputClass}><option value="activo">activo</option><option value="inactivo">inactivo</option></select>
         <button disabled={props.procesando === `variante-nueva-${producto.id}`} className={botonNegro}>Agregar variante</button>
       </form>

@@ -1,5 +1,13 @@
 import type { TalleProducto } from "@/types/talle-producto";
 
+export interface VigenciaPrecio {
+  clase: "regular" | "promocional";
+  importe: string;
+  inicio: string;
+  fin: string | null;
+  origen: string;
+}
+
 export interface Producto {
   id: number;
   nombre: string;
