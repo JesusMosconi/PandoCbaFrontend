@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, ClipboardList, ImageIcon, Package, ShieldCheck, Users } from "lucide-react";
+import { ArrowUpRight, ClipboardList, ImageIcon, Package, ShieldCheck, ShoppingBag, Truck, Users } from "lucide-react";
 import { exigirAdministrador } from "@/lib/autorizacion";
 
 export default async function AdminPage() {
@@ -34,6 +34,20 @@ export default async function AdminPage() {
       icono: Users,
       etiqueta: "Usuarios",
     },
+    {
+      href: "/admin/proveedores",
+      titulo: "Proveedores",
+      descripcion: "Gestioná proveedores activos y consultá su historial.",
+      icono: Truck,
+      etiqueta: "Compras",
+    },
+    {
+      href: "/admin/compras",
+      titulo: "Compras",
+      descripcion: "Cargá entregas recibidas, revisá costos y confirmá ingresos.",
+      icono: ShoppingBag,
+      etiqueta: "Inventario",
+    },
   ];
 
   return (
@@ -66,7 +80,7 @@ export default async function AdminPage() {
             <p className="font-manrope text-[10px] uppercase tracking-[0.3em] text-neutral-300">
               Estado
             </p>
-            <p className="mt-6 font-epilogue text-5xl font-black leading-none">4</p>
+            <p className="mt-6 font-epilogue text-5xl font-black leading-none">6</p>
             <p className="mt-3 text-sm text-neutral-300">Secciones operativas disponibles.</p>
           </div>
 

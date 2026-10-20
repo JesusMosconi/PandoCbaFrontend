@@ -53,6 +53,7 @@ export interface ResumenCheckout {
 }
 
 export interface DetalleOrden {
+  id: number;
   posicion: number;
   nombreProducto: string;
   talle: string;
@@ -104,6 +105,31 @@ export interface OrdenAdmin extends Orden {
   restituirStock: boolean | null;
   pagoConfirmadoPorId: number | null;
   envioCoordinadoPorId: number | null;
+  costoMercaderia?: CostoMercaderiaOrden;
+  devolucionesCliente?: DevolucionCliente[];
+}
+
+export interface CostoMercaderiaOrden {
+  estado: "sin_pago" | "sin_fifo" | "parcial" | "costo_desconocido" | "completo";
+  importeMercaderia?: string;
+  importeAtribuido?: string;
+  costoConocido?: string;
+  diferenciaCorrecciones?: string;
+  unidadesSinCosto?: number;
+  margenBruto: string | null;
+  origenes: Array<{
+    partidaId: number;
+    origen: string;
+    proveedorId: number | null;
+    proveedorNombre: string | null;
+    cantidad: number;
+    cantidadDevuelta?: number;
+    importeEfectivo: string | null;
+    costoConocido: string | null;
+    costoRevertido?: string | null;
+    costoAlPago?: string | null;
+    estado: "vendida" | "revertida";
+  }>;
 }
 
 export interface PaginaOrdenesAdmin {
@@ -131,4 +157,79 @@ export interface ErrorOrden {
   camposInvalidos?: CampoInvalido[];
   resumen?: ResumenCheckout;
   estadoActual?: EstadoOrden;
+}
+
+export type EstadoDevolucionCliente = "pendiente" | "parcial" | "efectivo" | "sin_reintegro";
+
+export interface DevolucionClienteEntrada {
+  lineas: Array<{ detalleOrdenId: number; cantidad: number }>;
+  motivo: string;
+  claveOperacion: string;
+}
+
+export interface DevolucionCliente {
+  id: number;
+  esCancelacionAnteriorSalida?: boolean;
+  ordenId: number;
+  detalleOrdenId: number;
+  cantidad: number;
+  importeDebido: string;
+  importeReintegradoAcumulado: string;
+  saldoPendiente: string;
+  costoRevertido: string | null;
+  unidadesCostoDesconocido: number;
+  estado: EstadoDevolucionCliente;
+  motivo: string;
+  motivoCierre: string | null;
+  claveCierre: string | null;
+  actorUsuarioId: number;
+  cerradoPorId: number | null;
+  aceptadaEn: string;
+  cerradoEn: string | null;
+  pagos: PagoReintegro[];
+  recepciones: RecepcionDevolucion[];
+  reiterada?: boolean;
+}
+
+export interface DevolucionesClienteResultado {
+  devoluciones: DevolucionCliente[];
+  reiterada?: boolean;
+}
+
+export interface PagoReintegroEntrada {
+  importeEfectivo: string;
+  claveOperacion: string;
+}
+
+export interface PagoReintegro {
+  id: number;
+  devolucionId: number;
+  importeEfectivo: string;
+  claveOperacion: string;
+  actorUsuarioId: number;
+  fecha: string;
+}
+
+export interface CierreSinReintegroEntrada {
+  motivo: string;
+  claveOperacion: string;
+}
+
+export interface RecepcionDevolucionEntrada {
+  cantidadApta: number;
+  cantidadDanada: number;
+  motivo?: string;
+  claveOperacion: string;
+}
+
+export interface RecepcionDevolucion {
+  id: number;
+  devolucionId: number;
+  partidaId: number | null;
+  cantidadApta: number;
+  cantidadDanada: number;
+  motivo: string | null;
+  claveOperacion: string;
+  actorUsuarioId: number;
+  fecha: string;
 }
