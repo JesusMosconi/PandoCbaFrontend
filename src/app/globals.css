@@ -17,6 +17,15 @@ body {
   font-family: var(--font-manrope), sans-serif;
 }
 
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
 .font-epilogue {
   font-family: var(--font-epilogue), sans-serif;
 }

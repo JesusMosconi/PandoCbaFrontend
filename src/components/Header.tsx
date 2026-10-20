@@ -61,6 +61,7 @@ export default function Header({ sesionIniciada, esAdmin = false }: HeaderProps)
                 className={`border-b-2 py-1 font-epilogue text-xs font-bold uppercase tracking-widest text-black transition-opacity ${
                   active ? "border-black opacity-100" : "border-transparent opacity-60 hover:opacity-100"
                 }`}
+                aria-current={active ? "page" : undefined}
               >
                 {item.label}
               </Link>

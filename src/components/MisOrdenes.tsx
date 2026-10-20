@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ApiError, apiFetchInterna } from "@/lib/api";
 import type { Orden } from "@/types/orden";
 import { tituloEstadoOrden } from "@/lib/estado-orden";
+import { useConfirmacion } from "@/components/useConfirmacion";
 
 const moneda = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
 const fecha = (valor: string | null) => valor ? new Date(valor).toLocaleString("es-AR") : "No disponible";
@@ -25,6 +26,7 @@ export default function MisOrdenes() {
   const [error, setError] = useState("");
   const [errorDetalle, setErrorDetalle] = useState("");
   const [cancelando, setCancelando] = useState(false);
+  const { confirmar, dialogo } = useConfirmacion();
 
   async function cargar() {
     setError("");
@@ -54,7 +56,10 @@ export default function MisOrdenes() {
 
   async function cancelar() {
     if (!detalle?.puedeCancelar || cancelando) return;
-    if (!window.confirm(`¿Cancelar la orden #${detalle.id}? Se liberará la reserva de productos.`)) return;
+    if (!await confirmar(`¿Cancelar la orden #${detalle.id}? Se liberará la reserva de productos.`, {
+      accion: "Cancelar orden",
+      destructiva: true,
+    })) return;
     setCancelando(true);
     setErrorDetalle("");
     try {
@@ -137,5 +142,6 @@ export default function MisOrdenes() {
       {detalle.devolucion === "pendiente_de_gestionar" && <p className="mt-3">Devolución pendiente de gestionar.</p>}
       {detalle.puedeCancelar && <button type="button" disabled={cancelando} onClick={() => void cancelar()} className="mt-6 border border-red-700 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-40">{cancelando ? "Cancelando..." : "Cancelar orden"}</button>}
     </article>}
+    {dialogo}
   </section>;
 }

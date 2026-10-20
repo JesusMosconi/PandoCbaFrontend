@@ -5,6 +5,7 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ApiError, apiFetchInterna } from "@/lib/api";
 import type { Carrito } from "@/types/carrito";
+import { useConfirmacion } from "@/components/useConfirmacion";
 
 const moneda = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
 
@@ -13,6 +14,7 @@ export default function CarritoPanel({ rol }: { rol: "cliente" | "admin" | null 
   const [mensaje, setMensaje] = useState("");
   const [mensajesStock, setMensajesStock] = useState<Record<number, string>>({});
   const [cargando, setCargando] = useState(true);
+  const { confirmar, dialogo } = useConfirmacion();
 
   useEffect(() => {
     apiFetchInterna<Carrito>("/api/carrito")
@@ -45,7 +47,7 @@ export default function CarritoPanel({ rol }: { rol: "cliente" | "admin" | null 
   }
 
   async function vaciar() {
-    if (!window.confirm("¿Estás seguro de que querés vaciar el carrito?")) return;
+    if (!await confirmar("¿Estás seguro de que querés vaciar el carrito?", { accion: "Vaciar carrito", destructiva: true })) return;
 
     try {
       setCarrito(await apiFetchInterna<Carrito>("/api/carrito", { method: "DELETE" }));
@@ -68,6 +70,12 @@ export default function CarritoPanel({ rol }: { rol: "cliente" | "admin" | null 
         {!!carrito.items.length && <button type="button" onClick={vaciar} className="text-xs font-bold uppercase tracking-widest underline">Vaciar</button>}
       </div>
       {mensaje && <p className="mt-5 text-sm text-red-700" role="alert">{mensaje}</p>}
+      {!!carrito.items.length && (
+        <p role="note" className="mt-5 border-l-2 border-black bg-gray-50 p-4 text-sm text-gray-700">
+          Los productos se conservarán durante 24 horas desde el último cambio del carrito. Al vencer ese plazo,
+          se quitarán. Agregarlos no reserva stock; la disponibilidad se confirma al comprar.
+        </p>
+      )}
       {!carrito.items.length ? (
         <div className="py-20 text-center"><p className="text-gray-500">Tu carrito está vacío.</p><Link href="/categorias" className="mt-6 inline-block bg-black px-5 py-3 text-xs font-bold uppercase tracking-widest text-white">Explorar productos</Link></div>
       ) : (
@@ -83,6 +91,7 @@ export default function CarritoPanel({ rol }: { rol: "cliente" | "admin" | null 
           <aside className="h-fit border-t-2 border-black pt-5"><div className="flex justify-between font-epilogue text-xl font-bold uppercase"><span>Subtotal del carrito</span><span>{moneda.format(carrito.subtotal)}</span></div><p className="mt-3 text-sm text-gray-500">Revisá los precios vigentes antes de confirmar. El costo de envío se coordina aparte.</p><Link href="/categorias" className="mt-7 block w-full border border-black px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.2em] text-black">Seguir Comprando</Link>{rol === "cliente" && <Link href="/checkout" className="mt-3 block w-full bg-black px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.2em] text-white">Revisar compra</Link>}</aside>
         </div>
       )}
+      {dialogo}
     </section>
   );
 }

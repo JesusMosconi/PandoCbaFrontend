@@ -38,7 +38,7 @@ export default function AuthForm() {
         body: JSON.stringify(body),
       });
 
-      router.push(respuesta.usuario.rol === "admin" ? "/admin" : "/cuenta");
+      router.push(respuesta.usuario.rol === "admin" ? "/admin" : "/categorias");
       router.refresh();
     } catch (error) {
       setMensaje(error instanceof ApiError ? error.message : "No pudimos procesar tu solicitud. Intentá de nuevo.");
@@ -74,10 +74,15 @@ export default function AuthForm() {
           <p className="mt-3 text-sm leading-6 text-[#6B7280]">
             {modo === "login" ? "Ingresá para continuar explorando el archivo." : "Completá tus datos y sé parte del próximo drop."}
           </p>
+          {modo === "login" && (
+            <p className="mt-3 text-xs leading-5 text-[#6B7280]">
+              Por seguridad, la sesión se cierra al cerrar el navegador o al vencer su plazo.
+            </p>
+          )}
 
-          <div className="mt-8 grid grid-cols-2 border-b border-black">
+          <div role="group" aria-label="Tipo de acceso" className="mt-8 grid grid-cols-2 border-b border-black">
             {(["login", "registro"] as Modo[]).map((opcion) => (
-              <button key={opcion} type="button" onClick={() => cambiarModo(opcion)} className={`border-b-2 pb-3 font-manrope text-xs font-bold uppercase tracking-[0.15em] ${modo === opcion ? "border-black text-black" : "border-transparent text-[#9CA3AF]"}`}>
+              <button key={opcion} type="button" aria-pressed={modo === opcion} onClick={() => cambiarModo(opcion)} className={`border-b-2 pb-3 font-manrope text-xs font-bold uppercase tracking-[0.15em] ${modo === opcion ? "border-black text-black" : "border-transparent text-[#9CA3AF]"}`}>
                 {opcion === "login" ? "Ingresar" : "Registrarme"}
               </button>
             ))}
