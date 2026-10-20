@@ -70,6 +70,12 @@ export default function CarritoPanel({ rol }: { rol: "cliente" | "admin" | null 
         {!!carrito.items.length && <button type="button" onClick={vaciar} className="text-xs font-bold uppercase tracking-widest underline">Vaciar</button>}
       </div>
       {mensaje && <p className="mt-5 text-sm text-red-700" role="alert">{mensaje}</p>}
+      {!!carrito.items.length && (
+        <p role="note" className="mt-5 border-l-2 border-black bg-gray-50 p-4 text-sm text-gray-700">
+          Los productos se conservarán durante 24 horas desde el último cambio del carrito. Al vencer ese plazo,
+          se quitarán. Agregarlos no reserva stock; la disponibilidad se confirma al comprar.
+        </p>
+      )}
       {!carrito.items.length ? (
         <div className="py-20 text-center"><p className="text-gray-500">Tu carrito está vacío.</p><Link href="/categorias" className="mt-6 inline-block bg-black px-5 py-3 text-xs font-bold uppercase tracking-widest text-white">Explorar productos</Link></div>
       ) : (
