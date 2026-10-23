@@ -42,9 +42,9 @@ export default function CheckoutPanel() {
   const [camposInvalidos, setCamposInvalidos] = useState<Record<string, string>>({});
   const [ordenCreada, setOrdenCreada] = useState<{ id: number; estado: string; venceEn: string } | null>(null);
 
-  async function solicitarConLimite<T>(ruta: string, body: object): Promise<T> {
+  async function solicitarConLimite<T>(ruta: string, body: object, limiteMs = 10_000): Promise<T> {
     const control = new AbortController();
-    const temporizador = window.setTimeout(() => control.abort(), 10_000);
+    const temporizador = window.setTimeout(() => control.abort(), limiteMs);
     try {
       return await apiFetchInterna<T>(ruta, {
         method: "POST", body: JSON.stringify(body), signal: control.signal,
@@ -150,7 +150,7 @@ export default function CheckoutPanel() {
     try {
       const orden = await solicitarConLimite<{ id: number; estado: string; venceEn: string }>(
         "/api/checkout/confirmacion", { ...entregaActual(), huellaResumen: resumen.huellaResumen,
-          aceptaPrecioVigente: true, claveConfirmacion: claveIntento.current },
+          aceptaPrecioVigente: true, claveConfirmacion: claveIntento.current }, 20_000,
       );
       setOrdenCreada(orden);
       window.dispatchEvent(new Event("carrito-actualizado"));
