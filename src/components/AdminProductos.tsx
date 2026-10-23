@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { apiFetchAdmin } from "@/lib/api";
 import { useConfirmacion } from "@/components/useConfirmacion";
@@ -85,6 +86,36 @@ export default function AdminProductos({
   const [colorEditandoId, setColorEditandoId] = useState<number | null>(null);
   const formularioRef = useRef<HTMLFormElement>(null);
   const { confirmar, dialogo } = useConfirmacion();
+  const searchParams = useSearchParams();
+  const busqueda = searchParams.get("buscar") ?? "";
+  const categoriaFiltro = searchParams.get("categoria") ?? "";
+  const coleccionFiltro = searchParams.get("coleccion") ?? "";
+  const activoFiltro = searchParams.get("activo") ?? "";
+  const webFiltro = searchParams.get("web") ?? "";
+  const busquedaNormalizada = busqueda.trim().toLocaleLowerCase("es-AR");
+  const idBuscado = /^\d+$/.test(busquedaNormalizada) ? Number(busquedaNormalizada) : null;
+  const productosFiltrados = productos.filter((producto) =>
+    (!busquedaNormalizada || producto.nombre.toLocaleLowerCase("es-AR").includes(busquedaNormalizada) || producto.id === idBuscado)
+    && (!categoriaFiltro || String(producto.categoriaId) === categoriaFiltro)
+    && (!coleccionFiltro || (coleccionFiltro === "sin" ? producto.coleccionId === null : String(producto.coleccionId) === coleccionFiltro))
+    && (activoFiltro !== "true" && activoFiltro !== "false" || String(producto.activo) === activoFiltro)
+    && (webFiltro !== "true" && webFiltro !== "false" || String(producto.web) === webFiltro)
+  );
+
+  function actualizarFiltro(clave: string, valor: string) {
+    const parametros = new URLSearchParams(window.location.search);
+    if (valor) parametros.set(clave, valor);
+    else parametros.delete(clave);
+    const consulta = parametros.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${consulta ? `?${consulta}` : ""}${window.location.hash}`);
+  }
+
+  function limpiarFiltros() {
+    const parametros = new URLSearchParams(window.location.search);
+    for (const clave of ["buscar", "categoria", "coleccion", "activo", "web"]) parametros.delete(clave);
+    const consulta = parametros.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${consulta ? `?${consulta}` : ""}${window.location.hash}`);
+  }
 
   useEffect(() => {
     if (!formVisible) return;
@@ -581,13 +612,48 @@ export default function AdminProductos({
           </form>
         )}
 
-        <div className="mt-6 overflow-x-auto border-2 border-black bg-white">
+        <div className="mt-6 border-2 border-black bg-white p-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <label className="text-xs font-bold uppercase">Nombre o ID
+              <input type="search" value={busqueda} onChange={(e) => actualizarFiltro("buscar", e.target.value)} placeholder="Buscar producto" className={`${inputClass} mt-1`} />
+            </label>
+            <label className="text-xs font-bold uppercase">Categoría
+              <select value={categoriaFiltro} onChange={(e) => actualizarFiltro("categoria", e.target.value)} className={`${inputClass} mt-1`}>
+                <option value="">Todas las categorías</option>
+                {categorias.map((item) => <option key={item.id} value={item.id}>{item.nombre}</option>)}
+              </select>
+            </label>
+            <label className="text-xs font-bold uppercase">Colección
+              <select value={coleccionFiltro} onChange={(e) => actualizarFiltro("coleccion", e.target.value)} className={`${inputClass} mt-1`}>
+                <option value="">Todas las colecciones</option>
+                <option value="sin">Sin colección</option>
+                {colecciones.map((item) => <option key={item.id} value={item.id}>{item.nombre}</option>)}
+              </select>
+            </label>
+            <label className="text-xs font-bold uppercase">Activo
+              <select value={activoFiltro === "true" || activoFiltro === "false" ? activoFiltro : ""} onChange={(e) => actualizarFiltro("activo", e.target.value)} className={`${inputClass} mt-1`}>
+                <option value="">Todos</option><option value="true">Activos</option><option value="false">Inactivos</option>
+              </select>
+            </label>
+            <label className="text-xs font-bold uppercase">Web
+              <select value={webFiltro === "true" || webFiltro === "false" ? webFiltro : ""} onChange={(e) => actualizarFiltro("web", e.target.value)} className={`${inputClass} mt-1`}>
+                <option value="">Todos</option><option value="true">En web</option><option value="false">Fuera de web</option>
+              </select>
+            </label>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+            <p role="status">{productosFiltrados.length} de {productos.length} productos</p>
+            <button type="button" onClick={limpiarFiltros} className="font-bold underline">Limpiar filtros</button>
+          </div>
+        </div>
+        {productosFiltrados.length === 0 && <p className="border-x-2 border-black bg-white p-5 text-sm">No hay productos que coincidan con los filtros.</p>}
+        <div className="overflow-x-auto border-2 border-black bg-white">
           <table className="w-full min-w-[1050px] border-collapse text-left text-sm">
             <thead className="bg-black text-xs uppercase tracking-wider text-white"><tr>
               {["Imagen", "ID", "Nombre", "Categor\u00eda", "Colecci\u00f3n", "Precio", "Activo", "Web", "Stock total", "Acciones"].map((item) => <th key={item} className="px-3 py-3">{item}</th>)}
             </tr></thead>
             <tbody>
-              {productos.map((producto) => (
+              {productosFiltrados.map((producto) => (
                 <FragmentoProducto
                   key={producto.id}
                   producto={producto}
