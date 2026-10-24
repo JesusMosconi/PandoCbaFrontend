@@ -10,3 +10,18 @@ export interface CatalogoInicioItem {
     talles: { talle: { valor: string } }[];
   };
 }
+
+export interface SeleccionCatalogoInicio {
+  id: number;
+  orden: number;
+  activo: boolean;
+  productoId: number;
+  producto: {
+    id: number;
+    nombre: string;
+    activo: boolean;
+    web: boolean;
+    coleccionId: number | null;
+  };
+  motivosOcultamiento: ("inactivo" | "no_publicado")[];
+}
