@@ -50,7 +50,7 @@ export default async function HomePage() {
             <h2 className="font-epilogue text-4xl font-semibold leading-none tracking-[-0.02em] text-[#1A1C1C] md:text-[48px] md:leading-[53px]">CATÁLOGO</h2>
             <p className="mt-2 font-manrope text-xs uppercase tracking-[0.1em] text-[#6B7280]">PIEZAS DE ARCHIVO & LANZAMIENTOS ESTACIONALES</p>
           </div>
-          <div className="flex flex-wrap gap-4"><button type="button" className="border border-black px-4 py-3 font-manrope text-xs font-bold uppercase tracking-[0.1em]">TALLE ▾</button><button type="button" className="border border-black px-4 py-3 font-manrope text-xs font-bold uppercase tracking-[0.1em]">PRECIO ▾</button><Link href="/categorias" className="bg-black px-4 py-3 font-manrope text-xs font-bold uppercase tracking-[0.1em] text-white">VER TODO</Link></div>
+          <div className="flex flex-wrap gap-4"><Link href="/categorias" className="bg-black px-4 py-3 font-manrope text-xs font-bold uppercase tracking-[0.1em] text-white">VER TODO</Link></div>
         </div>
         <div className="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {catalogo.slice(0, 5).map((item, index) => <div key={item.id} className={index === 0 ? "lg:col-span-2" : undefined}><FeaturedProductCard item={item} variant={index === 0 ? "large" : "small"} /></div>)}
