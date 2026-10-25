@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, ShoppingBag, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -47,7 +48,7 @@ export default function Header({ sesionIniciada, esAdmin = false }: HeaderProps)
     <header className="fixed inset-x-0 top-0 z-50 h-20 border-b-2 border-black bg-white">
       <div className="flex h-full items-center justify-between px-5 sm:px-8">
         <Link href="/" className="flex items-center gap-3" aria-label="Pando CBA, inicio">
-          <div className="h-[71px] w-[71px] shrink-0 bg-neutral-200" aria-hidden="true" />
+          <Image src="/logo-pando-cba.png" alt="" width={71} height={71} priority className="h-[71px] w-[71px] shrink-0 object-contain" />
           <span className="font-epilogue text-sm font-black tracking-tighter text-black">PANDO CBA</span>
         </Link>
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, ClipboardList, ImageIcon, Package, ShieldCheck, ShoppingBag, Truck, Users } from "lucide-react";
+import { ArrowUpRight, ClipboardList, ImageIcon, LayoutGrid, Package, ShieldCheck, ShoppingBag, Truck, Users } from "lucide-react";
 import { exigirAdministrador } from "@/lib/autorizacion";
 
 export default async function AdminPage() {
@@ -26,6 +26,13 @@ export default async function AdminPage() {
       descripcion: "Administrá catálogo, talles, colores, variantes y stock editorial.",
       icono: Package,
       etiqueta: "Catálogo",
+    },
+    {
+      href: "/admin/catalogo-inicio",
+      titulo: "Catálogo de Inicio",
+      descripcion: "Elegí y ordená hasta cinco productos para la portada.",
+      icono: LayoutGrid,
+      etiqueta: "Inicio",
     },
     {
       href: "/admin/clientes",
@@ -80,7 +87,7 @@ export default async function AdminPage() {
             <p className="font-manrope text-[10px] uppercase tracking-[0.3em] text-neutral-300">
               Estado
             </p>
-            <p className="mt-6 font-epilogue text-5xl font-black leading-none">6</p>
+            <p className="mt-6 font-epilogue text-5xl font-black leading-none">7</p>
             <p className="mt-3 text-sm text-neutral-300">Secciones operativas disponibles.</p>
           </div>
 
