@@ -43,7 +43,9 @@ export default function CuentaPanel({ usuarioInicial, mostrarOrdenes }: CuentaPa
   async function cambiarPassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMensajePassword("");
-    const datos = new FormData(event.currentTarget);
+    // Guardar el formulario antes del await: React vacía event.currentTarget al terminar el evento.
+    const formulario = event.currentTarget;
+    const datos = new FormData(formulario);
 
     try {
       const respuesta = await apiFetchInterna<{ message: string }>("/api/usuarios/cambiar-password", {
@@ -53,7 +55,7 @@ export default function CuentaPanel({ usuarioInicial, mostrarOrdenes }: CuentaPa
           passwordNuevo: datos.get("passwordNuevo"),
         }),
       });
-      event.currentTarget.reset();
+      formulario.reset();
       setMensajePassword(respuesta.message);
     } catch (error) {
       setMensajePassword(error instanceof ApiError ? error.message : "No pudimos actualizar tu contraseña.");

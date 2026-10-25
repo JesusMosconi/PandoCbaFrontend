@@ -1,37 +1,13 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { ApiError, apiFetch } from "@/lib/api";
+import { useSuscripcionNewsletter } from "@/lib/useSuscripcionNewsletter";
 
 type NewsletterFormProps = {
   variant?: "compact" | "light" | "dark";
 };
 
 export default function NewsletterForm({ variant = "compact" }: NewsletterFormProps) {
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [sending, setSending] = useState(false);
-
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMessage("");
-    setSending(true);
-
-    try {
-      await apiFetch("/suscripciones", {
-        method: "POST",
-        body: JSON.stringify({ email }),
-      });
-      setEmail("");
-      setMessage("¡Listo! Te vamos a avisar primero.");
-    } catch (error) {
-      setMessage(error instanceof ApiError && error.status === 409
-        ? "Este correo ya está suscripto."
-        : "No pudimos registrar tu correo. Intentá de nuevo.");
-    } finally {
-      setSending(false);
-    }
-  }
+  const { email, setEmail, message, sending, onSubmit } = useSuscripcionNewsletter();
 
   const light = variant === "light";
   const dark = variant === "dark";
