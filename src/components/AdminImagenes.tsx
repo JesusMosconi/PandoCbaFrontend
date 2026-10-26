@@ -4,11 +4,10 @@ import { FormEvent, useState } from "react";
 import { apiFetchAdmin } from "@/lib/api";
 import { useConfirmacion } from "@/components/useConfirmacion";
 import type { Categoria } from "@/types/categoria";
-import type { Coleccion } from "@/types/coleccion";
 import type { ContenidoInicio } from "@/types/contenido-inicio";
 import type { ImagenNosotros } from "@/types/imagen-nosotros";
 
-type TipoEntidad = "categorias" | "colecciones" | "contenido-inicio" | "imagenes-nosotros";
+type TipoEntidad = "categorias" | "contenido-inicio" | "imagenes-nosotros";
 
 type ItemImagen = {
   id: number;
@@ -25,7 +24,6 @@ type Seccion = {
 
 type Props = {
   categorias: Categoria[];
-  colecciones: Coleccion[];
   contenidos: ContenidoInicio[];
   imagenesNosotros: ImagenNosotros[];
 };
@@ -34,7 +32,7 @@ function claveItem(tipo: TipoEntidad, id: number) {
   return `${tipo}-${id}`;
 }
 
-export default function AdminImagenes({ categorias, colecciones, contenidos, imagenesNosotros }: Props) {
+export default function AdminImagenes({ categorias, contenidos, imagenesNosotros }: Props) {
   const [secciones, setSecciones] = useState<Seccion[]>([
     {
       tipo: "categorias",
@@ -47,20 +45,10 @@ export default function AdminImagenes({ categorias, colecciones, contenidos, ima
       })),
     },
     {
-      tipo: "colecciones",
-      titulo: "Colecciones",
-      descripcion: "Portadas de los drops y fondo principal utilizado actualmente en Inicio.",
-      items: colecciones.map((coleccion) => ({
-        id: coleccion.id,
-        nombre: coleccion.nombre,
-        imagenUrl: coleccion.imagenUrl,
-      })),
-    },
-    {
       tipo: "contenido-inicio",
       titulo: "Contenido de Inicio",
       descripcion: "Imágenes asociadas a las secciones configurables de la página de Inicio.",
-      items: contenidos.map((contenido) => ({
+      items: contenidos.filter((contenido) => contenido.seccionNombre !== "hero").map((contenido) => ({
         id: contenido.id,
         nombre: contenido.seccionNombre,
         imagenUrl: contenido.imagenUrl,
