@@ -3,7 +3,6 @@ import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { exigirAdministrador } from "@/lib/autorizacion";
 import type { Categoria } from "@/types/categoria";
-import type { Coleccion } from "@/types/coleccion";
 import type { ContenidoInicio } from "@/types/contenido-inicio";
 import type { ImagenNosotros } from "@/types/imagen-nosotros";
 
@@ -13,15 +12,13 @@ export default async function AdminImagenesPage() {
   await exigirAdministrador();
 
   let categorias: Categoria[] = [];
-  let colecciones: Coleccion[] = [];
   let contenidos: ContenidoInicio[] = [];
   let imagenesNosotros: ImagenNosotros[] = [];
   let errorCarga = false;
 
   try {
-    [categorias, colecciones, contenidos, imagenesNosotros] = await Promise.all([
+    [categorias, contenidos, imagenesNosotros] = await Promise.all([
       apiFetch<Categoria[]>("/categorias"),
-      apiFetch<Coleccion[]>("/colecciones"),
       apiFetch<ContenidoInicio[]>("/contenido-inicio"),
       apiFetch<ImagenNosotros[]>("/imagenes-nosotros"),
     ]);
@@ -43,7 +40,7 @@ export default async function AdminImagenesPage() {
             Administrar imágenes
           </h1>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-neutral-600">
-            Subí, reemplazá o eliminá las imágenes visibles en categorías, colecciones y contenidos de Inicio.
+            Subí, reemplazá o eliminá las imágenes de categorías y otras secciones. Las portadas de drops y marca se gestionan en Drops.
           </p>
         </header>
 
@@ -55,7 +52,6 @@ export default async function AdminImagenesPage() {
         ) : (
           <AdminImagenes
             categorias={categorias}
-            colecciones={colecciones}
             contenidos={contenidos}
             imagenesNosotros={imagenesNosotros}
           />

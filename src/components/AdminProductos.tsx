@@ -253,7 +253,7 @@ export default function AdminProductos({
     setProcesando(clave);
     mostrarMensaje(`imagenes-${productoId}`);
     try {
-      const imagenes = await apiFetchAdmin<ImagenProducto[]>(`/img-producto/${productoId}`);
+      const imagenes = await apiFetchAdmin<ImagenProducto[]>(`/img-producto/${productoId}?admin=true`);
       actualizarImagenesProducto(productoId, imagenes);
     } catch (error) {
       mostrarMensaje(`imagenes-${productoId}`, {

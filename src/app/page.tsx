@@ -4,42 +4,38 @@ import FeaturedProductCard from "@/components/FeaturedProductCard";
 import NewsletterForm from "@/components/NewsletterForm";
 import { apiFetch } from "@/lib/api";
 import type { CatalogoInicioItem } from "@/types/catalogo-inicio";
-import type { Coleccion } from "@/types/coleccion";
-import type { ContenidoInicio } from "@/types/contenido-inicio";
+import type { InicioDrop } from "@/types/drop";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  let colecciones: Coleccion[] = [];
-  let contenidos: ContenidoInicio[] = [];
+  let inicio: InicioDrop;
   let catalogo: CatalogoInicioItem[] = [];
 
   try {
-    [colecciones, contenidos, catalogo] = await Promise.all([
-      apiFetch<Coleccion[]>("/colecciones"),
-      apiFetch<ContenidoInicio[]>("/contenido-inicio"),
+    [inicio, catalogo] = await Promise.all([
+      apiFetch<InicioDrop>("/drops/inicio"),
       apiFetch<CatalogoInicioItem[]>("/catalogo-inicio"),
     ]);
   } catch {
     return <section className="p-6"><div className="border border-red-200 bg-red-50 p-6 text-red-800">No pudimos cargar el inicio. Intentá de nuevo más tarde.</div></section>;
   }
 
-  const drop = colecciones.filter((collection) => collection.contadorActivo)
-    .sort((a, b) => new Date(b.fechaCreado).getTime() - new Date(a.fechaCreado).getTime())[0];
-  const hero = contenidos.find((content) => content.seccionNombre === "hero");
-  const heroTitle = hero?.titulo ?? "NO SIGAS TENDENCIAS.\nCREALAS.";
-  const heroButton = hero?.textBoton ?? "IR A LA COLECCIÓN";
-  const backgroundStyle = drop?.imagenUrl ? { backgroundImage: `url(${drop.imagenUrl})` } : undefined;
+  const drop = inicio.tipo === "marca" ? null : inicio.drop;
+  const heroTitle = inicio.tipo === "marca" ? null : inicio.drop.tituloInicio;
+  const backgroundUrl = inicio.tipo === "marca" ? inicio.marca.imagenUrl : inicio.drop.imagenUrl;
+  const backgroundStyle = backgroundUrl ? { backgroundImage: `url(${backgroundUrl})` } : undefined;
 
   return (
     <div>
-      <section className="flex min-h-[680px] bg-neutral-800 bg-cover bg-center px-6 py-10 md:h-[921px] md:min-h-0 md:px-16 md:py-16" style={backgroundStyle}>
+      <section className={`flex min-h-[680px] bg-center px-6 py-10 md:h-[921px] md:min-h-0 md:px-16 md:py-16 ${inicio.tipo === "marca" ? "bg-black bg-contain bg-no-repeat md:bg-cover" : "bg-neutral-800 bg-cover"}`} style={backgroundStyle}>
+        {inicio.tipo === "marca" && <h1 className="sr-only">No hay drops por el momento</h1>}
         <div className="mt-auto flex flex-col items-start gap-4 text-white">
           {drop && <p className="bg-black px-4 py-2 font-manrope text-xs font-bold tracking-[0.3em]">{drop.numeroDrop === null ? "NEW DROP" : `NEW DROP // ${String(drop.numeroDrop).padStart(3, "0")}`}</p>}
-          <h1 className="max-w-4xl whitespace-pre-line font-epilogue text-5xl font-bold uppercase leading-none tracking-[-0.04em] md:text-[80px] md:leading-[80px]">{heroTitle}</h1>
+          {heroTitle && <h1 className="max-w-4xl whitespace-pre-line font-epilogue text-5xl font-bold uppercase leading-none tracking-[-0.04em] md:text-[80px] md:leading-[80px]">{heroTitle}</h1>}
           <div className="mt-4 flex flex-col items-start gap-6 sm:flex-row sm:items-end sm:gap-8">
-            {drop && <Link href={`/colecciones/${drop.id}`} className="border border-black bg-black px-8 py-5 font-manrope text-xs font-bold uppercase tracking-[0.1em] text-white sm:px-12">{heroButton}</Link>}
-            {drop?.fechaLanzamiento && <DropCountdown fechaLanzamiento={drop.fechaLanzamiento} />}
+            {inicio.tipo === "activo" && <Link href={inicio.urlColeccion} className="border border-black bg-black px-8 py-5 font-manrope text-xs font-bold uppercase tracking-[0.1em] text-white sm:px-12">{inicio.drop.textoBotonInicio}</Link>}
+            {inicio.tipo === "futuro" && inicio.drop.fechaLanzamiento && <DropCountdown fechaLanzamiento={inicio.drop.fechaLanzamiento} />}
           </div>
         </div>
       </section>

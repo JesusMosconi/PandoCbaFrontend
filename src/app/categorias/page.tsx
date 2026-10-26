@@ -3,7 +3,7 @@ import NewsletterForm from "@/components/NewsletterForm";
 import { categoryTags, dropTag } from "@/lib/category-tags";
 import { apiFetch } from "@/lib/api";
 import type { Categoria } from "@/types/categoria";
-import type { Coleccion } from "@/types/coleccion";
+import type { DropsCategorias } from "@/types/drop";
 
 export const dynamic = "force-dynamic";
 
@@ -35,21 +35,20 @@ function Tile({ href, title, tag, imageUrl, area }: { href?: string; title: stri
 
 export default async function CategoriasPage() {
   let categorias: Categoria[] = [];
-  let colecciones: Coleccion[] = [];
+  let drops: DropsCategorias = { destacado: null, colecciones: [] };
   let loadError = false;
 
   try {
-    [categorias, colecciones] = await Promise.all([
+    [categorias, drops] = await Promise.all([
       apiFetch<Categoria[]>("/categorias"),
-      apiFetch<Coleccion[]>("/colecciones"),
+      apiFetch<DropsCategorias>("/drops/categorias"),
     ]);
   } catch {
     loadError = true;
   }
 
-  const byNewest = (a: Coleccion, b: Coleccion) => new Date(b.fechaCreado).getTime() - new Date(a.fechaCreado).getTime();
-  const drop = colecciones.filter((collection) => collection.contadorActivo).sort(byNewest)[0];
-  const ultimasColecciones = [...colecciones].sort(byNewest).slice(0, 3);
+  const drop = drops.destacado;
+  const ultimasColecciones = drops.colecciones;
 
   return (
     <div>
@@ -68,7 +67,7 @@ export default async function CategoriasPage() {
               const categoria = categorias.find((item) => normalized(item.nombre) === normalized(name));
               return <Tile key={name} area={area} title={name} tag={categoryTags[name]} imageUrl={categoria?.imagenUrl} href={categoria ? `/categorias/${categoria.id}` : undefined} />;
             })}
-            {drop && <Tile area="drop" title={drop.nombre} tag={dropTag} imageUrl={drop.imagenUrl} href={`/colecciones/${drop.id}`} />}
+            {drop && <Tile area="drop" title={drop.nombre} tag={drop.agotado ? "AGOTADO" : dropTag} imageUrl={drop.imagenUrl} href={drop.urlColeccion} />}
           </section>
 
           <section className="grid border-b-2 border-black md:grid-cols-2">
@@ -80,7 +79,7 @@ export default async function CategoriasPage() {
             <div className="p-8 md:p-16">
               <p className="mb-8 font-epilogue text-xs font-bold uppercase tracking-[0.1em]">COLECCIONES</p>
               <ul className="space-y-4">
-                {ultimasColecciones.map((coleccion) => <li key={coleccion.id} className="flex items-center justify-between gap-4 border-b border-[#E2E2E2] pb-2"><span className="font-epilogue text-xl font-bold uppercase tracking-[-0.01em] md:text-2xl">{coleccion.nombre}</span><Link href={`/colecciones/${coleccion.id}`} className="shrink-0 font-epilogue text-xs font-bold uppercase tracking-[0.1em]">VER →</Link></li>)}
+                {ultimasColecciones.map((coleccion) => <li key={coleccion.id} className="flex items-center justify-between gap-4 border-b border-[#E2E2E2] pb-2"><span className="font-epilogue text-xl font-bold uppercase tracking-[-0.01em] md:text-2xl">{coleccion.nombre}</span><Link href={coleccion.urlColeccion} className="shrink-0 font-epilogue text-xs font-bold uppercase tracking-[0.1em]">VER →</Link></li>)}
                 {!ultimasColecciones.length && <li className="text-sm text-[#4C4546]">Próximamente nuevas colecciones.</li>}
               </ul>
             </div>

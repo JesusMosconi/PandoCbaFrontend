@@ -22,6 +22,7 @@ const motivoTexto: Record<string, string> = {
   producto_improvisado: "Este producto improvisado no participa del checkout web; corregilo en el carrito",
   producto_retirado: "El producto fue retirado",
   producto_no_publicado: "El producto no está publicado para la tienda web",
+  drop_no_lanzado: "El drop todavía no se lanzó",
   variante_inactiva: "La variante ya no está activa",
   stock_insuficiente: "No hay stock disponible para la cantidad solicitada",
 };

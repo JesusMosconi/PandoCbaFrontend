@@ -1,11 +1,18 @@
 import Link from "next/link";
-import { ArrowUpRight, ClipboardList, ImageIcon, LayoutGrid, Package, ShieldCheck, ShoppingBag, Truck, Users } from "lucide-react";
+import { ArrowUpRight, ClipboardList, ImageIcon, LayoutGrid, Package, ShieldCheck, ShoppingBag, Truck, Users, Layers3 } from "lucide-react";
 import { exigirAdministrador } from "@/lib/autorizacion";
 
 export default async function AdminPage() {
   await exigirAdministrador();
 
   const modulos = [
+    {
+      href: "/admin/drops",
+      titulo: "Drops",
+      descripcion: "Creá lanzamientos, gestioná portadas y configurá la imagen de marca de Inicio.",
+      icono: Layers3,
+      etiqueta: "Colecciones",
+    },
     {
       href: "/admin/ordenes",
       titulo: "Órdenes",
@@ -16,7 +23,7 @@ export default async function AdminPage() {
     {
       href: "/admin/imagenes",
       titulo: "Imágenes",
-      descripcion: "Gestioná banners, categorías, colecciones y contenido visual del sitio.",
+      descripcion: "Gestioná imágenes de categorías y de otras secciones del sitio.",
       icono: ImageIcon,
       etiqueta: "Visual",
     },
@@ -87,7 +94,7 @@ export default async function AdminPage() {
             <p className="font-manrope text-[10px] uppercase tracking-[0.3em] text-neutral-300">
               Estado
             </p>
-            <p className="mt-6 font-epilogue text-5xl font-black leading-none">7</p>
+            <p className="mt-6 font-epilogue text-5xl font-black leading-none">8</p>
             <p className="mt-3 text-sm text-neutral-300">Secciones operativas disponibles.</p>
           </div>
 
