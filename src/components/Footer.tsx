@@ -1,19 +1,13 @@
 "use client";
 
 import { ArrowRight, Camera, MessageCircle, Send } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { useSuscripcionNewsletter } from "@/lib/useSuscripcionNewsletter";
 
 const categories = ["Nuevos Drops", "Remeras", "Pantalones", "Buzos", "Zapatillas"];
 const contactInfo = ["+543543304908", "+3543304908", "pandocba@gmail.com", "Av. Mahatma Gandhi 300"];
 
 export default function Footer() {
-  const [email, setEmail] = useState("");
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    // TODO: conectar con la ruta de Suscripcion del backend.
-    console.log(email);
-  }
+  const { email, setEmail, message, sending, onSubmit } = useSuscripcionNewsletter();
 
   return (
     <footer className="border-t border-gray-200 bg-[#F5F5F5]">
@@ -49,19 +43,21 @@ export default function Footer() {
 
           <section>
             <h2 className="font-manrope text-xs font-bold uppercase tracking-widest text-black">Más información</h2>
-            <form onSubmit={handleSubmit} className="mt-5 flex border-b border-black">
+            <form onSubmit={onSubmit} className="mt-5 flex border-b border-black">
               <input
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="Correo electrónico"
                 aria-label="Correo electrónico para el newsletter"
+                required
                 className="min-w-0 flex-1 bg-transparent py-2 font-manrope text-xs outline-none placeholder:text-gray-400"
               />
-              <button type="submit" aria-label="Suscribirme al newsletter" className="px-1 text-black">
+              <button type="submit" disabled={sending} aria-label="Suscribirme al newsletter" className="px-1 text-black disabled:opacity-60">
                 <ArrowRight size={15} />
               </button>
             </form>
+            {message && <p className="mt-3 font-manrope text-xs text-[#4C4546]" role="status">{message}</p>}
             <div className="mt-6 flex gap-4">
               <a href="#" aria-label="Instagram" className="text-[#1E1E1E]"><Camera size={15} /></a>
               <a href="#" aria-label="Mensajes" className="text-[#1E1E1E]"><MessageCircle size={15} /></a>
