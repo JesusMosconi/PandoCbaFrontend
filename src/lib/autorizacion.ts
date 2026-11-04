@@ -13,3 +13,13 @@ export async function exigirAdministrador(): Promise<Usuario> {
 
   return usuario;
 }
+
+/** Punto de venta del local: admite al vendedor y al administrador. */
+export async function exigirVendedor(): Promise<Usuario> {
+  const usuario = await obtenerSesion();
+
+  if (!usuario) redirect("/login");
+  if (usuario.rol !== "vendedor" && usuario.rol !== "admin") redirect("/");
+
+  return usuario;
+}

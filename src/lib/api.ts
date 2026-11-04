@@ -81,6 +81,11 @@ export async function reenviarAExpress(
   });
 }
 
+/** Envía operaciones del punto de venta mediante el BFF que valida la sesión httpOnly. */
+export function apiFetchVendedor<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  return apiFetchInterna<T>(`/api/vendedor${endpoint}`, options);
+}
+
 /** Envía operaciones administrativas mediante el proxy que valida la sesión httpOnly. */
 export function apiFetchAdmin<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   return apiFetchInterna<T>(`/api/admin${endpoint}`, options);

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, ClipboardList, ImageIcon, LayoutGrid, Package, ShieldCheck, ShoppingBag, Truck, Users, Layers3 } from "lucide-react";
+import { ArrowUpRight, BarChart3, ClipboardList, ImageIcon, LayoutGrid, Package, ShieldCheck, ShoppingBag, Truck, Users, Layers3 } from "lucide-react";
 import { exigirAdministrador } from "@/lib/autorizacion";
 
 export default async function AdminPage() {
@@ -19,6 +19,13 @@ export default async function AdminPage() {
       descripcion: "Confirmá pagos manuales y gestioná preparación, entregas y cancelaciones.",
       icono: ClipboardList,
       etiqueta: "Ventas",
+    },
+    {
+      href: "/admin/ventas",
+      titulo: "Ventas por canal",
+      descripcion: "Compará web y local por medio de pago y revisá el historial de cajas.",
+      icono: BarChart3,
+      etiqueta: "Conciliación",
     },
     {
       href: "/admin/imagenes",
@@ -94,7 +101,7 @@ export default async function AdminPage() {
             <p className="font-manrope text-[10px] uppercase tracking-[0.3em] text-neutral-300">
               Estado
             </p>
-            <p className="mt-6 font-epilogue text-5xl font-black leading-none">8</p>
+            <p className="mt-6 font-epilogue text-5xl font-black leading-none">{modulos.length}</p>
             <p className="mt-3 text-sm text-neutral-300">Secciones operativas disponibles.</p>
           </div>
 

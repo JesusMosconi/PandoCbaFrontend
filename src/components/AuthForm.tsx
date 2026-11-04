@@ -5,9 +5,15 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { ApiError, apiFetchInterna } from "@/lib/api";
-import type { Usuario } from "@/types/usuario";
+import type { RolUsuario, Usuario } from "@/types/usuario";
 
 type Modo = "login" | "registro";
+
+const destinoPorRol: Record<RolUsuario, string> = {
+  admin: "/admin",
+  vendedor: "/vendedor",
+  cliente: "/categorias",
+};
 
 export default function AuthForm() {
   const router = useRouter();
@@ -38,7 +44,7 @@ export default function AuthForm() {
         body: JSON.stringify(body),
       });
 
-      router.push(respuesta.usuario.rol === "admin" ? "/admin" : "/categorias");
+      router.push(destinoPorRol[respuesta.usuario.rol]);
       router.refresh();
     } catch (error) {
       setMensaje(error instanceof ApiError ? error.message : "No pudimos procesar tu solicitud. Intentá de nuevo.");

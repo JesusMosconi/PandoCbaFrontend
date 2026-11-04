@@ -1,3 +1,5 @@
+export type RolUsuario = "cliente" | "admin" | "vendedor";
+
 export type Usuario = {
   id: number;
   nombre: string;
@@ -5,7 +7,7 @@ export type Usuario = {
   email: string;
   telefono: string | null;
   fechaCreado: string;
-  rol: "cliente" | "admin";
+  rol: RolUsuario;
   activo: boolean;
 };
 

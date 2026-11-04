@@ -65,7 +65,7 @@ export interface DetalleOrden {
 
 export interface EventoOrden {
   fecha: string;
-  origen: "cliente" | "administracion" | "tarea";
+  origen: "cliente" | "administracion" | "tarea" | "local";
   actorUsuarioId: number | null;
   actorNombre?: string | null;
   estadoAnterior: EstadoOrden | null;
@@ -98,8 +98,19 @@ export interface Orden {
   datosEnvio?: DatosEnvioCheckout | null;
 }
 
-export interface OrdenAdmin extends Orden {
-  cliente: { id: number; nombre: string; apellido: string; email: string };
+export type CanalVenta = "web" | "local";
+export type MetodoPago = "manual" | "efectivo" | "transferencia" | "debito" | "credito";
+
+export interface OrdenAdmin extends Omit<Orden, "usuarioId" | "tipoEntrega"> {
+  usuarioId: number | null;
+  tipoEntrega: TipoEntrega | "local";
+  canal: CanalVenta;
+  metodoPago: MetodoPago | string;
+  numeroComprobante: number | null;
+  nombreCliente: string | null;
+  telefonoCliente: string | null;
+  /** `null` en las ventas del local, que no se atribuyen a una persona. */
+  cliente: { id: number; nombre: string; apellido: string; email: string } | null;
   eventos: EventoOrden[];
   motivoCancelacion: string | null;
   restituirStock: boolean | null;

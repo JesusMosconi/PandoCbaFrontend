@@ -10,7 +10,7 @@ export default function Footer() {
   const { email, setEmail, message, sending, onSubmit } = useSuscripcionNewsletter();
 
   return (
-    <footer className="border-t border-gray-200 bg-[#F5F5F5]">
+    <footer className="border-t border-gray-200 bg-[#F5F5F5] print:hidden">
       <div className="mx-auto max-w-6xl px-6 py-12 sm:px-8 lg:py-16">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
           <section>

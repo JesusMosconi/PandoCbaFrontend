@@ -38,6 +38,7 @@ type ProductoForm = {
   coleccionId: string;
   activo: boolean;
   web: boolean;
+  local: boolean;
 };
 
 const formVacio: ProductoForm = {
@@ -48,6 +49,7 @@ const formVacio: ProductoForm = {
   coleccionId: "",
   activo: true,
   web: true,
+  local: true,
 };
 
 const inputClass = "w-full border-2 border-black bg-white px-3 py-2 text-sm";
@@ -92,6 +94,7 @@ export default function AdminProductos({
   const coleccionFiltro = searchParams.get("coleccion") ?? "";
   const activoFiltro = searchParams.get("activo") ?? "";
   const webFiltro = searchParams.get("web") ?? "";
+  const localFiltro = searchParams.get("local") ?? "";
   const busquedaNormalizada = busqueda.trim().toLocaleLowerCase("es-AR");
   const idBuscado = /^\d+$/.test(busquedaNormalizada) ? Number(busquedaNormalizada) : null;
   const productosFiltrados = productos.filter((producto) =>
@@ -100,6 +103,7 @@ export default function AdminProductos({
     && (!coleccionFiltro || (coleccionFiltro === "sin" ? producto.coleccionId === null : String(producto.coleccionId) === coleccionFiltro))
     && (activoFiltro !== "true" && activoFiltro !== "false" || String(producto.activo) === activoFiltro)
     && (webFiltro !== "true" && webFiltro !== "false" || String(producto.web) === webFiltro)
+    && (localFiltro !== "true" && localFiltro !== "false" || String(producto.local) === localFiltro)
   );
 
   function actualizarFiltro(clave: string, valor: string) {
@@ -112,7 +116,7 @@ export default function AdminProductos({
 
   function limpiarFiltros() {
     const parametros = new URLSearchParams(window.location.search);
-    for (const clave of ["buscar", "categoria", "coleccion", "activo", "web"]) parametros.delete(clave);
+    for (const clave of ["buscar", "categoria", "coleccion", "activo", "web", "local"]) parametros.delete(clave);
     const consulta = parametros.toString();
     window.history.replaceState(null, "", `${window.location.pathname}${consulta ? `?${consulta}` : ""}${window.location.hash}`);
   }
@@ -160,6 +164,7 @@ export default function AdminProductos({
       coleccionId: producto.coleccionId ? String(producto.coleccionId) : "",
       activo: producto.activo,
       web: producto.web,
+      local: producto.local,
     });
     setFormVisible(true);
     mostrarMensaje("producto-form");
@@ -179,6 +184,7 @@ export default function AdminProductos({
       ...(coleccionId !== null ? { coleccionId } : {}),
       activo: productoForm.activo,
       web: productoForm.web,
+      local: productoForm.local,
     };
 
     try {
@@ -604,6 +610,7 @@ export default function AdminProductos({
             </label>
             <label className="flex items-center gap-2 text-xs font-bold uppercase"><input type="checkbox" checked={productoForm.activo} onChange={(e) => setProductoForm({ ...productoForm, activo: e.target.checked })} /> Activo</label>
             <label className="flex items-center gap-2 text-xs font-bold uppercase"><input type="checkbox" checked={productoForm.web} onChange={(e) => setProductoForm({ ...productoForm, web: e.target.checked })} /> Web</label>
+            <label className="flex items-center gap-2 text-xs font-bold uppercase"><input type="checkbox" checked={productoForm.local} onChange={(e) => setProductoForm({ ...productoForm, local: e.target.checked })} /> Local</label>
             <div className="flex gap-2 sm:col-span-2 lg:col-span-4">
               <button disabled={procesando === "producto-form"} className={botonNegro}>{procesando === "producto-form" ? "Guardando..." : "Guardar"}</button>
               <button type="button" onClick={() => setFormVisible(false)} className="border-2 border-black px-4 py-2 text-xs font-bold uppercase">Cancelar</button>
@@ -640,6 +647,11 @@ export default function AdminProductos({
                 <option value="">Todos</option><option value="true">En web</option><option value="false">Fuera de web</option>
               </select>
             </label>
+            <label className="text-xs font-bold uppercase">Local
+              <select value={localFiltro === "true" || localFiltro === "false" ? localFiltro : ""} onChange={(e) => actualizarFiltro("local", e.target.value)} className={`${inputClass} mt-1`}>
+                <option value="">Todos</option><option value="true">En local</option><option value="false">Fuera de local</option>
+              </select>
+            </label>
           </div>
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
             <p role="status">{productosFiltrados.length} de {productos.length} productos</p>
@@ -650,7 +662,7 @@ export default function AdminProductos({
         <div className="overflow-x-auto border-2 border-black bg-white">
           <table className="w-full min-w-[1050px] border-collapse text-left text-sm">
             <thead className="bg-black text-xs uppercase tracking-wider text-white"><tr>
-              {["Imagen", "ID", "Nombre", "Categor\u00eda", "Colecci\u00f3n", "Precio", "Activo", "Web", "Stock total", "Acciones"].map((item) => <th key={item} className="px-3 py-3">{item}</th>)}
+              {["Imagen", "ID", "Nombre", "Categor\u00eda", "Colecci\u00f3n", "Precio", "Activo", "Web", "Local", "Stock total", "Acciones"].map((item) => <th key={item} className="px-3 py-3">{item}</th>)}
             </tr></thead>
             <tbody>
               {productosFiltrados.map((producto) => (
@@ -797,7 +809,7 @@ function FragmentoProducto(props: FilaProps) {
       <td className="px-3 py-3 font-bold">{producto.id}</td><td className="px-3 py-3 font-bold">{producto.nombre}</td>
       <td className="px-3 py-3">{producto.categoria.nombre}</td><td className="px-3 py-3">{producto.coleccion?.nombre ?? "-"}</td>
       <td className="px-3 py-3">${producto.precio}</td><td className="px-3 py-3"><span className={badge(producto.activo)}>{producto.activo ? "S\u00ed" : "No"}</span></td>
-      <td className="px-3 py-3"><span className={badge(producto.web)}>{producto.web ? "S\u00ed" : "No"}</span></td><td className="px-3 py-3 font-bold">{stockTotal}</td>
+      <td className="px-3 py-3"><span className={badge(producto.web)}>{producto.web ? "S\u00ed" : "No"}</span></td><td className="px-3 py-3"><span className={badge(producto.local)}>{producto.local ? "S\u00ed" : "No"}</span></td><td className="px-3 py-3 font-bold">{stockTotal}</td>
       <td className="px-3 py-3"><div className="flex flex-wrap gap-2">
         <Link href={`/admin/compras?productoId=${producto.id}#informes`} className="text-xs font-bold uppercase underline">Historial</Link>
         <button type="button" onClick={props.onEditar} className="text-xs font-bold uppercase underline">Editar</button>
@@ -806,7 +818,7 @@ function FragmentoProducto(props: FilaProps) {
         <button type="button" data-product-detail-trigger onClick={props.onExpandir} className="text-xs font-bold uppercase underline">{props.expandido ? "Ocultar variantes" : "Ver variantes"}</button>
       </div>{props.mensajes[`producto-${producto.id}`] && <p className={`mt-2 text-xs ${props.mensajes[`producto-${producto.id}`].tipo === "ok" ? "text-green-700" : "text-red-700"}`}>{props.mensajes[`producto-${producto.id}`].texto}</p>}</td>
     </tr>
-    {props.imagenesExpandido && <tr className="border-b-2 border-black bg-neutral-100"><td colSpan={10} className="p-5" data-product-detail-panel>
+    {props.imagenesExpandido && <tr className="border-b-2 border-black bg-neutral-100"><td colSpan={11} className="p-5" data-product-detail-panel>
       {props.procesando === `imagenes-carga-${producto.id}` && props.imagenes === undefined ? (
         <p className="text-xs font-bold uppercase text-neutral-500">Cargando imágenes...</p>
       ) : (
@@ -834,7 +846,7 @@ function FragmentoProducto(props: FilaProps) {
         </>
       )}
     </td></tr>}
-    {props.expandido && <tr className="border-b-2 border-black bg-neutral-100"><td colSpan={10} className="p-5" data-product-detail-panel>
+    {props.expandido && <tr className="border-b-2 border-black bg-neutral-100"><td colSpan={11} className="p-5" data-product-detail-panel>
       <div className="overflow-x-auto"><table className="w-full min-w-[700px] bg-white text-sm"><thead><tr className="border-b-2 border-black text-xs uppercase tracking-wider"><th className="p-2">Talle</th><th className="p-2">Color</th><th className="p-2">Stock</th><th className="p-2">Estado</th><th className="p-2">Acciones</th></tr></thead><tbody>
         {producto.talles.map((variante) => <tr key={variante.id} className={`border-b border-neutral-300 ${variante.estado === "inactivo" ? "opacity-50" : ""}`}>
           <td className="p-2">{variante.talle.valor}</td><td className="p-2"><span className="inline-flex items-center gap-2"><span className="h-4 w-4 border border-black" style={{ backgroundColor: variante.color.hex }} />{variante.color.nombre}</span></td>

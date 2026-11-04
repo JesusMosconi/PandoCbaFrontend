@@ -5,15 +5,30 @@ import { ApiError, apiFetchAdmin } from "@/lib/api";
 import type { OrdenAdmin, PaginaOrdenesAdmin } from "@/types/orden";
 import { tituloEstadoOrden } from "@/lib/estado-orden";
 import { useConfirmacion } from "@/components/useConfirmacion";
+import { MEDIOS_PAGO_LOCAL, etiquetaMedioPago } from "@/lib/venta-local";
 
 const moneda = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
 const fecha = (valor: string | null) => valor ? new Date(valor).toLocaleString("es-AR") : "No disponible";
+const mediosPago = [{ valor: "manual", etiqueta: etiquetaMedioPago("manual") }, ...MEDIOS_PAGO_LOCAL];
+
+function parametrosOrdenes(numero: number, filtros: Record<string, string>) {
+  const parametros = new URLSearchParams({ pagina: String(numero), limite: "20" });
+  for (const [clave, valor] of Object.entries(filtros)) if (valor) parametros.set(clave, valor);
+  return parametros;
+}
+
+function titular(orden: OrdenAdmin) {
+  return orden.cliente ? `${orden.cliente.nombre} ${orden.cliente.apellido}`
+    : `Venta en local · comprobante n.º ${orden.numeroComprobante ?? "-"}`;
+}
 
 export default function AdminOrdenes() {
   const [pagina, setPagina] = useState<PaginaOrdenesAdmin | null>(null);
   const [detalle, setDetalle] = useState<OrdenAdmin | null>(null);
   const [filtroEstado, setFiltroEstado] = useState("");
   const [filtroEntrega, setFiltroEntrega] = useState("");
+  const [filtroCanal, setFiltroCanal] = useState("");
+  const [filtroMedio, setFiltroMedio] = useState("");
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(true);
   const [ocupado, setOcupado] = useState(false);
@@ -38,9 +53,9 @@ export default function AdminOrdenes() {
     setCargando(true);
     setError("");
     try {
-      const parametros = new URLSearchParams({ pagina: String(numero), limite: "20" });
-      if (filtroEstado) parametros.set("estado", filtroEstado);
-      if (filtroEntrega) parametros.set("tipoEntrega", filtroEntrega);
+      const parametros = parametrosOrdenes(numero, {
+        estado: filtroEstado, tipoEntrega: filtroEntrega, canal: filtroCanal, metodoPago: filtroMedio,
+      });
       setPagina(await apiFetchAdmin<PaginaOrdenesAdmin>(`/ordenes?${parametros}`));
     } catch (causa) {
       setError(causa instanceof ApiError ? causa.message : "No pudimos cargar las órdenes. Reintentá.");
@@ -117,9 +132,9 @@ export default function AdminOrdenes() {
     if (!pendienteAbierta && !hayPendientes) return;
     const temporizador = window.setInterval(() => {
       if (!navigator.onLine) return;
-      const parametros = new URLSearchParams({ pagina: String(paginaActual), limite: "20" });
-      if (filtroEstado) parametros.set("estado", filtroEstado);
-      if (filtroEntrega) parametros.set("tipoEntrega", filtroEntrega);
+      const parametros = parametrosOrdenes(paginaActual, {
+        estado: filtroEstado, tipoEntrega: filtroEntrega, canal: filtroCanal, metodoPago: filtroMedio,
+      });
       apiFetchAdmin<PaginaOrdenesAdmin>(`/ordenes?${parametros}`)
         .then(setPagina)
         .catch(() => setError("No pudimos actualizar la lista. Reintentá."));
@@ -130,7 +145,7 @@ export default function AdminOrdenes() {
       }
     }, 60_000);
     return () => window.clearInterval(temporizador);
-  }, [detalleId, pendienteAbierta, paginaActual, hayPendientes, filtroEstado, filtroEntrega]);
+  }, [detalleId, pendienteAbierta, paginaActual, hayPendientes, filtroEstado, filtroEntrega, filtroCanal, filtroMedio]);
 
   const pendiente = detalle?.estado === "pendiente_pago" && detalle.estadoVisible === "pendiente_pago";
   const pagada = detalle && ["pago_confirmado", "en_preparacion", "lista_para_retiro", "enviada"].includes(detalle.estado);
@@ -148,7 +163,18 @@ export default function AdminOrdenes() {
       </label>
       <label className="text-sm font-semibold">Entrega
         <select value={filtroEntrega} onChange={(event) => setFiltroEntrega(event.target.value)} className="mt-1 block border border-black p-2">
-          <option value="">Todas</option><option value="retiro">Retiro</option><option value="envio">Envío</option>
+          <option value="">Todas</option><option value="retiro">Retiro</option><option value="envio">Envío</option><option value="local">En el local</option>
+        </select>
+      </label>
+      <label className="text-sm font-semibold">Canal
+        <select value={filtroCanal} onChange={(event) => setFiltroCanal(event.target.value)} className="mt-1 block border border-black p-2">
+          <option value="">Todos</option><option value="web">Web</option><option value="local">Local</option>
+        </select>
+      </label>
+      <label className="text-sm font-semibold">Medio de pago
+        <select value={filtroMedio} onChange={(event) => setFiltroMedio(event.target.value)} className="mt-1 block border border-black p-2">
+          <option value="">Todos</option>
+          {mediosPago.map(({ valor, etiqueta }) => <option key={valor} value={valor}>{etiqueta}</option>)}
         </select>
       </label>
       <button type="button" onClick={() => void cargar()} className="border border-black px-4 py-2 text-sm font-bold">Buscar / actualizar</button>
@@ -159,7 +185,7 @@ export default function AdminOrdenes() {
     {pagina?.ordenes.length === 0 && !error && !cargando && <p>No hay órdenes para estos filtros.</p>}
     {!!pagina?.ordenes.length && <div className="divide-y divide-gray-300 border-y border-black">
       {pagina.ordenes.map((orden) => <div key={orden.id} className="flex flex-wrap items-center justify-between gap-4 py-4">
-        <div><strong>#{orden.id} · {orden.cliente.nombre} {orden.cliente.apellido}</strong><p className="text-sm">{orden.estadoVisible.replaceAll("_", " ")} · {orden.tipoEntrega}</p><p className="text-sm text-gray-600">{fecha(orden.creadaEn)}</p></div>
+        <div><strong>#{orden.id} · {titular(orden)}</strong><p className="text-sm"><span className="mr-2 border border-black px-1.5 text-[10px] font-bold uppercase">{orden.canal}</span>{orden.estadoVisible.replaceAll("_", " ")} · {orden.tipoEntrega} · {etiquetaMedioPago(orden.metodoPago)}</p><p className="text-sm text-gray-600">{fecha(orden.creadaEn)}</p></div>
         <button type="button" onClick={() => void abrir(orden.id)} className="border border-black px-4 py-2 text-sm font-bold">Ver y gestionar</button>
       </div>)}
     </div>}
@@ -167,10 +193,15 @@ export default function AdminOrdenes() {
 
     {detalle && <article className="border-2 border-black bg-white p-5" aria-labelledby="orden-admin-detalle">
       <div className="flex justify-between gap-4"><h2 id="orden-admin-detalle" className="font-epilogue text-2xl font-bold uppercase">Orden #{detalle.id}</h2><button type="button" onClick={() => setDetalle(null)} className="underline">Cerrar</button></div>
-      <p className="mt-2">Cliente: {detalle.cliente.nombre} {detalle.cliente.apellido} · {detalle.cliente.email}</p>
+      {detalle.cliente
+        ? <p className="mt-2">Cliente: {detalle.cliente.nombre} {detalle.cliente.apellido} · {detalle.cliente.email}</p>
+        : <p className="mt-2">Venta en el local · comprobante n.º {detalle.numeroComprobante}{detalle.nombreCliente ? ` · ${detalle.nombreCliente}` : ""}{detalle.telefonoCliente ? ` · ${detalle.telefonoCliente}` : ""}</p>}
+      <p className="mt-2">Canal: {detalle.canal === "local" ? "Local" : "Web"} · Medio de pago: {etiquetaMedioPago(detalle.metodoPago)}</p>
       <p className="mt-2">Estado: {detalle.estadoVisible.replaceAll("_", " ")}</p>
       {detalle.estadoVisible === "reserva_vencida_en_proceso" && <p className="mt-2 text-amber-800">Reserva vencida; cancelación en proceso.</p>}
-      <p className="mt-2">Entrega: {detalle.tipoEntrega}. Reserva hasta: {fecha(detalle.venceEn)}</p>
+      {detalle.canal === "local"
+        ? <p className="mt-2">Entregada en el local: {fecha(detalle.pagoConfirmadoEn)}</p>
+        : <p className="mt-2">Entrega: {detalle.tipoEntrega}. Reserva hasta: {fecha(detalle.venceEn)}</p>}
       {detalle.canceladaEn && <p className="mt-2">Cancelada: {fecha(detalle.canceladaEn)}</p>}
       <div className="mt-5 divide-y divide-gray-200 border-y">
         {detalle.detalles.map((linea) => <p key={linea.posicion} className="flex justify-between gap-3 py-3"><span>{linea.nombreProducto} · {linea.talle} / {linea.color} × {linea.cantidad}</span><span>{moneda.format(Number(linea.importeLinea))}</span></p>)}
@@ -191,7 +222,7 @@ export default function AdminOrdenes() {
         </>}
       </section>}
       {detalle.estadoCostoEnvio === "sin_cotizar" ? <><p className="mt-2">Envío: costo a coordinar</p><p className="mt-2">Total final pendiente.</p></>
-        : detalle.estadoCostoEnvio === "no_aplica" ? <p className="mt-2">Total retiro: {moneda.format(Number(detalle.totalFinal))}</p>
+        : detalle.estadoCostoEnvio === "no_aplica" ? <p className="mt-2">{detalle.canal === "local" ? "Total" : "Total retiro"}: {moneda.format(Number(detalle.totalFinal))}</p>
           : <p className="mt-2">Importes heredados: total registrado {detalle.totalFinal ?? "no disponible"}.</p>}
       {detalle.envioCoordinado && <p className="mt-2">Coordinación externa registrada: {fecha(detalle.envioCoordinadoEn)} por usuario #{detalle.envioCoordinadoPorId}. No acredita un monto de envío aquí.</p>}
       {detalle.motivoCancelacion && <p className="mt-2">Motivo de cancelación: {detalle.motivoCancelacion}. Restituir stock: {detalle.restituirStock === null ? "no aplica" : detalle.restituirStock ? "sí" : "no"}.</p>}
@@ -223,7 +254,8 @@ export default function AdminOrdenes() {
           <label className="text-sm">Línea de venta
             <select className="mt-1 block w-full border border-black p-2" value={lineaDevolucionId || ""} onChange={(e) => { setLineaDevolucionId(Number(e.target.value)); setClaveDevolucion(""); }}>
               <option value="">Seleccioná</option>
-              {detalle.detalles.map((linea) => <option key={linea.id} value={linea.id}>{linea.nombreProducto} · {linea.talle} · máximo {linea.cantidad}</option>)}
+              {/* Las líneas de venta rápida no tienen inventario que devolver. */}
+              {detalle.detalles.filter((linea) => linea.talle !== "").map((linea) => <option key={linea.id} value={linea.id}>{linea.nombreProducto} · {linea.talle} · máximo {linea.cantidad}</option>)}
             </select>
           </label>
           <label className="text-sm">Unidades a aceptar
