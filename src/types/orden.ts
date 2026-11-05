@@ -10,7 +10,7 @@ export type EstadoOrden =
   | "cancelada_vencimiento";
 
 export type EstadoVisibleOrden = EstadoOrden | "reserva_vencida_en_proceso";
-export type EstadoCostoEnvio = "no_aplica" | "sin_cotizar";
+export type EstadoCostoEnvio = "no_aplica" | "sin_cotizar" | "cotizado";
 export type TipoEntrega = "retiro" | "envio";
 
 export interface DatosEnvioCheckout {
@@ -42,6 +42,10 @@ export interface LineaResumen {
 }
 
 export interface ResumenCheckout {
+  pagosOnlineDisponibles?: boolean;
+  esDemostracion?: boolean;
+  cobertura?: "retiro" | "cordoba_capital" | "fuera_de_cobertura" | null;
+  camposInvalidos?: { campo: string; codigo: string; mensaje: string }[];
   lineas: LineaResumen[];
   subtotalCarrito: string;
   subtotalProductos: string;
@@ -65,7 +69,7 @@ export interface DetalleOrden {
 
 export interface EventoOrden {
   fecha: string;
-  origen: "cliente" | "administracion" | "tarea";
+  origen: "cliente" | "administracion" | "tarea" | "proveedor";
   actorUsuarioId: number | null;
   actorNombre?: string | null;
   estadoAnterior: EstadoOrden | null;
@@ -75,6 +79,11 @@ export interface EventoOrden {
 }
 
 export interface Orden {
+  esDemostracion?: boolean;
+  metodoPago?: string;
+  estadoPago?: string;
+  domicilioRevisado?: boolean;
+  domicilioRevisadoEn?: string | null;
   id: number;
   usuarioId: number;
   tipoEntrega: TipoEntrega;
@@ -99,6 +108,15 @@ export interface Orden {
 }
 
 export interface OrdenAdmin extends Orden {
+  saldoMonetarioPendiente?: string;
+  intentosPago?: { id: number; estado: string; referenciaExterna: string | null;
+    importe: string; creadoEn: string; ultimoChequeoEn: string | null }[];
+  incidenciasPago?: { id: number; tipo: string; estado: string; referenciaExterna: string | null;
+    importe: string | null; detectadaEn: string; resueltaEn: string | null;
+    actorUsuarioId: number | null; resolucion: string | null }[];
+  reintegrosPago?: { id: number; concepto: string; importeDebido: string; importeReintegrado: string;
+    estado: string; referenciaExterna: string | null; comprobadoEn: string | null;
+    creadoEn: string; actorUsuarioId: number | null; motivo: string | null; metodo: string | null }[];
   cliente: { id: number; nombre: string; apellido: string; email: string };
   eventos: EventoOrden[];
   motivoCancelacion: string | null;
@@ -199,6 +217,14 @@ export interface DevolucionesClienteResultado {
 export interface PagoReintegroEntrada {
   importeEfectivo: string;
   claveOperacion: string;
+  referenciaExterna?: string;
+}
+
+export interface EstadoPagoOrden {
+  estadoPago: "sin_iniciar" | "pendiente" | "aprobado" | "rechazado" | "incidencia";
+  importeCobrado: string;
+  saldoMonetarioPendiente: string;
+  puedeReintentarPago: boolean;
 }
 
 export interface PagoReintegro {
@@ -208,6 +234,8 @@ export interface PagoReintegro {
   claveOperacion: string;
   actorUsuarioId: number;
   fecha: string;
+  referenciaExterna?: string | null;
+  comprobadoEn?: string | null;
 }
 
 export interface CierreSinReintegroEntrada {

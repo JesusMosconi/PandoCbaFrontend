@@ -18,6 +18,7 @@ export default function AdminOrdenes() {
   const [cargando, setCargando] = useState(true);
   const [ocupado, setOcupado] = useState(false);
   const [motivo, setMotivo] = useState("");
+  const [motivoReintegroEnvio, setMotivoReintegroEnvio] = useState("");
   const [restituirStock, setRestituirStock] = useState("");
   const [envioCoordinado, setEnvioCoordinado] = useState(false);
   const [lineaDevolucionId, setLineaDevolucionId] = useState(0);
@@ -27,6 +28,8 @@ export default function AdminOrdenes() {
   const [devolucionId, setDevolucionId] = useState(0);
   const [gestionDevolucion, setGestionDevolucion] = useState<"reintegros" | "cierre-sin-reintegro" | "recepciones">("reintegros");
   const [importeReintegro, setImporteReintegro] = useState("");
+  const [constanciaProducto, setConstanciaProducto] = useState("");
+  const [constanciaExaminada, setConstanciaExaminada] = useState(false);
   const [cantidadApta, setCantidadApta] = useState(0);
   const [cantidadDanada, setCantidadDanada] = useState(0);
   const [motivoGestion, setMotivoGestion] = useState("");
@@ -58,6 +61,7 @@ export default function AdminOrdenes() {
       setEnvioCoordinado(false);
       setLineaDevolucionId(0); setDevolucionId(0);
       setClaveDevolucion(""); setClaveGestion(""); setMensajeDevolucion("");
+      setConstanciaProducto(""); setConstanciaExaminada(false);
     } catch (causa) {
       setError(causa instanceof ApiError ? causa.message : "No pudimos cargar el detalle. Reintentá.");
     }
@@ -191,16 +195,55 @@ export default function AdminOrdenes() {
         </>}
       </section>}
       {detalle.estadoCostoEnvio === "sin_cotizar" ? <><p className="mt-2">Envío: costo a coordinar</p><p className="mt-2">Total final pendiente.</p></>
+        : detalle.estadoCostoEnvio === "cotizado" ? <p className="mt-2">Envío: {moneda.format(Number(detalle.costoEnvio))} · total {moneda.format(Number(detalle.totalFinal))}</p>
         : detalle.estadoCostoEnvio === "no_aplica" ? <p className="mt-2">Total retiro: {moneda.format(Number(detalle.totalFinal))}</p>
           : <p className="mt-2">Importes heredados: total registrado {detalle.totalFinal ?? "no disponible"}.</p>}
       {detalle.envioCoordinado && <p className="mt-2">Coordinación externa registrada: {fecha(detalle.envioCoordinadoEn)} por usuario #{detalle.envioCoordinadoPorId}. No acredita un monto de envío aquí.</p>}
       {detalle.motivoCancelacion && <p className="mt-2">Motivo de cancelación: {detalle.motivoCancelacion}. Restituir stock: {detalle.restituirStock === null ? "no aplica" : detalle.restituirStock ? "sí" : "no"}.</p>}
       {detalle.devolucion === "pendiente_de_gestionar" && !detalle.devolucionesCliente?.length && <p className="mt-2 font-semibold">Devolución pendiente de gestionar; no se registró reembolso.</p>}
 
-      {pendiente && <button type="button" disabled={ocupado} onClick={() => void accion("pago", "POST", {})} className="mt-6 bg-black px-4 py-3 text-sm font-bold text-white disabled:opacity-40">Confirmar pago manual ({moneda.format(Number(detalle.subtotalProductos))})</button>}
+      {pendiente && detalle.metodoPago !== "mercado_pago" && <button type="button" disabled={ocupado} onClick={() => void accion("pago", "POST", {})} className="mt-6 bg-black px-4 py-3 text-sm font-bold text-white disabled:opacity-40">Confirmar pago manual ({moneda.format(Number(detalle.subtotalProductos))})</button>}
+      {detalle.esDemostracion && <section aria-label="Pagos y reintegros simulados" className="mt-5 border border-amber-700 p-4">
+        <p className="font-bold">Demostración: pagos, envíos y reintegros sin dinero ni mercadería reales</p>
+        <p className="mt-2">Pago: {detalle.estadoPago ?? "sin iniciar"}. Envío: {moneda.format(Number(detalle.costoEnvio ?? 0))}. Total: {moneda.format(Number(detalle.totalFinal ?? 0))}.</p>
+        <p>Saldo de reintegros simulados: {moneda.format(Number(detalle.saldoMonetarioPendiente ?? 0))}</p>
+        {detalle.intentosPago?.map((i) => <p key={i.id} className="mt-2">Intento #{i.id}: {i.estado} · {moneda.format(Number(i.importe))} · {fecha(i.creadoEn)}{i.referenciaExterna ? ` · ${i.referenciaExterna}` : ""}</p>)}
+        {detalle.incidenciasPago?.map((i) => <div key={i.id} className="mt-2"><p>Incidencia #{i.id}: {i.tipo.replaceAll("_", " ")} · {i.estado}</p>
+          <p>Importe: {i.importe === null ? "sin determinar" : moneda.format(Number(i.importe))} · Detectada: {fecha(i.detectadaEn)}</p>
+          {i.resolucion && <p>Resolución: {i.resolucion} · actor #{i.actorUsuarioId ?? "?"} · {fecha(i.resueltaEn)}</p>}
+          {i.estado === "abierta" && <button type="button" disabled={ocupado} className="mt-1 underline"
+            onClick={async () => { if (await confirmar("¿Revisaste en el entorno de prueba que no existe un cobro pendiente de resolver?", { accion: "Registrar revisión simulada" }))
+              void accion(`incidencias/${i.id}/resolucion`, "POST", { motivo: "Revisión administrativa de la simulación sin cobro pendiente", constancia: `SIM-revision-${i.id}` }); }}>Registrar revisión de incidencia simulada</button>}
+        </div>)}
+        {detalle.tipoEntrega === "envio" && detalle.pagoConfirmadoEn && !detalle.domicilioRevisado && <button type="button" disabled={ocupado}
+          className="mt-3 border border-black px-3 py-2" onClick={async () => {
+            if (await confirmar("¿Revisaste calle, altura y pertenencia a Córdoba Capital?", { accion: "Registrar revisión" }))
+              void accion("revision-domicilio", "POST", {});
+          }}>Registrar revisión del domicilio</button>}
+        {detalle.domicilioRevisado && <p className="mt-2">Domicilio revisado: {fecha(detalle.domicilioRevisadoEn ?? null)}</p>}
+        {!!Number(detalle.costoEnvio) && detalle.pagoConfirmadoEn && !detalle.reintegrosPago?.some((r) => r.concepto === "envio") && <div className="mt-3">
+          <label>Motivo de reintegro de envío<input value={motivoReintegroEnvio} onChange={(e) => setMotivoReintegroEnvio(e.target.value)} className="block w-full border border-black p-2" /></label>
+          <button type="button" disabled={ocupado || motivoReintegroEnvio.trim().length < 5} className="mt-2 underline"
+            onClick={() => void accion("reintegro-envio", "POST", { motivo: motivoReintegroEnvio.trim() })}>Registrar obligación de envío simulada</button>
+        </div>}
+        {detalle.reintegrosPago?.map((r) => <div key={r.id} className="mt-3 border-t border-black pt-2">
+          <p>Reintegro #{r.id} · {r.concepto} · {r.estado} · {moneda.format(Number(r.importeDebido))}</p>
+          <p>Reintegrado: {moneda.format(Number(r.importeReintegrado))} · actor #{r.actorUsuarioId ?? "?"} · {r.motivo ?? "Sin motivo adicional"}</p>
+          {r.comprobadoEn && <p>Resultado registrado: {fecha(r.comprobadoEn)} · {r.referenciaExterna}</p>}
+          {(r.estado === "pendiente" || r.estado === "fallido") && <button type="button" disabled={ocupado} className="mt-2 underline"
+            onClick={() => void accion(`reintegros-pago/${r.id}/inicio`, "POST", {})}>Iniciar reintegro simulado</button>}
+          {r.estado === "en_proceso" && r.referenciaExterna && <div className="mt-2">
+            <p>Constancia interna: {r.referenciaExterna}</p>
+            <button type="button" disabled={ocupado} className="mr-3 underline"
+              onClick={() => void accion(`reintegros-pago/${r.id}`, "POST", { referenciaExterna: r.referenciaExterna, resultado: "completado" })}>Registrar éxito simulado</button>
+            <button type="button" disabled={ocupado} className="underline"
+              onClick={() => void accion(`reintegros-pago/${r.id}`, "POST", { referenciaExterna: r.referenciaExterna, resultado: "fallido" })}>Registrar fallo simulado</button>
+          </div>}
+        </div>)}
+      </section>}
       {siguientes.map((estado) => <div key={estado} className="mt-5">
-        {estado === "enviada" && <label className="mb-3 flex items-start gap-2"><input type="checkbox" checked={envioCoordinado} onChange={(event) => setEnvioCoordinado(event.target.checked)} /> Confirmo que costo y cobro del envío se coordinaron externamente.</label>}
-        <button type="button" disabled={ocupado || (estado === "enviada" && !envioCoordinado)} onClick={() => void accion("estado", "PATCH", { estado, ...(estado === "enviada" ? { envioCoordinado: true } : {}) })} className="border border-black px-4 py-2 text-sm font-bold disabled:opacity-40">Pasar a {estado.replaceAll("_", " ")}</button>
+        {estado === "enviada" && !detalle.esDemostracion && <label className="mb-3 flex items-start gap-2"><input type="checkbox" checked={envioCoordinado} onChange={(event) => setEnvioCoordinado(event.target.checked)} /> Confirmo que costo y cobro del envío se coordinaron externamente.</label>}
+        <button type="button" disabled={ocupado || (estado === "enviada" && (detalle.esDemostracion ? !detalle.domicilioRevisado : !envioCoordinado))} onClick={() => void accion("estado", "PATCH", { estado, ...(estado === "enviada" && !detalle.esDemostracion ? { envioCoordinado: true } : {}) })} className="border border-black px-4 py-2 text-sm font-bold disabled:opacity-40">{detalle.esDemostracion ? "Simular" : "Pasar a"} {estado.replaceAll("_", " ")}</button>
       </div>)}
 
       {(pendiente || (pagada && detalle.estado !== "enviada")) && <div className="mt-7 border-t border-black pt-5">
@@ -247,6 +290,7 @@ export default function AdminOrdenes() {
             <p><strong>Devolución #{devolucion.id}</strong> · {devolucion.cantidad} unidad(es) · {devolucion.estado}{devolucion.esCancelacionAnteriorSalida ? " · cancelación antes de salida" : ""}</p>
             <p>Debido {moneda.format(Number(devolucion.importeDebido))} · reintegrado {moneda.format(Number(devolucion.importeReintegradoAcumulado))} · saldo {moneda.format(Number(devolucion.saldoPendiente))}</p>
             <p>Recepciones: {devolucion.recepciones.map((recepcion) => `${recepcion.cantidadApta} apta(s), ${recepcion.cantidadDanada} dañada(s)`).join("; ") || "ninguna"}</p>
+            {devolucion.pagos.map((pago) => <p key={pago.id}>Reintegro de producto: {moneda.format(Number(pago.importeEfectivo))} · {fecha(pago.fecha)} · actor #{pago.actorUsuarioId}{pago.referenciaExterna ? ` · ${pago.referenciaExterna}` : ""}</p>)}
           </div>)}
           <label className="block text-sm">Gestionar devolución
             <select className="mt-1 block w-full border border-black p-2" value={devolucionId || ""} onChange={(e) => { setDevolucionId(Number(e.target.value)); setGestionDevolucion("reintegros"); setClaveGestion(""); }}>
@@ -263,6 +307,14 @@ export default function AdminOrdenes() {
           {gestionDevolucion === "reintegros" && <label className="block text-sm">Importe efectivo reintegrado
             <input type="text" inputMode="decimal" value={importeReintegro} onChange={(e) => { setImporteReintegro(e.target.value); setClaveGestion(""); }} className="mt-1 block w-full border border-black p-2" />
           </label>}
+          {gestionDevolucion === "reintegros" && detalle.esDemostracion && <div className="mt-3">
+            <label className="block text-sm">Constancia de reintegro simulado
+              <input type="text" value={constanciaProducto} onChange={(e) => { setConstanciaProducto(e.target.value); setConstanciaExaminada(false); setClaveGestion(""); }}
+                placeholder="SIM-..." className="mt-1 block w-full border border-black p-2" />
+            </label>
+            <label className="mt-2 flex items-center gap-2 text-sm"><input type="checkbox" checked={constanciaExaminada}
+              onChange={(e) => setConstanciaExaminada(e.target.checked)} />Examiné esta constancia de la simulación.</label>
+          </div>}
           {gestionDevolucion === "recepciones" && <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-sm">Unidades aptas<input type="number" min={0} value={cantidadApta} onChange={(e) => { setCantidadApta(Number(e.target.value)); setClaveGestion(""); }} className="mt-1 block w-full border border-black p-2" /></label>
             <label className="text-sm">Unidades dañadas<input type="number" min={0} value={cantidadDanada} onChange={(e) => { setCantidadDanada(Number(e.target.value)); setClaveGestion(""); }} className="mt-1 block w-full border border-black p-2" /></label>
@@ -270,16 +322,19 @@ export default function AdminOrdenes() {
           {gestionDevolucion !== "reintegros" && <label className="block text-sm">Motivo
             <textarea value={motivoGestion} onChange={(e) => { setMotivoGestion(e.target.value); setClaveGestion(""); }} className="mt-1 block w-full border border-black p-2" />
           </label>}
-          <button type="button" disabled={ocupado || !devolucionId || (gestionDevolucion === "reintegros" && !importeReintegro)
+          <button type="button" disabled={ocupado || !devolucionId || (gestionDevolucion === "reintegros" && (!importeReintegro
+            || (detalle.esDemostracion && (!/^SIM-[A-Za-z0-9_-]{4,100}$/.test(constanciaProducto) || !constanciaExaminada))))
             || (gestionDevolucion === "cierre-sin-reintegro" && !motivoGestion.trim())
             || (gestionDevolucion === "recepciones" && cantidadApta + cantidadDanada < 1)}
             onClick={() => { const clave = claveGestion || crypto.randomUUID(); setClaveGestion(clave);
               if (window.confirm(`¿Registrar ${gestionDevolucion.replaceAll("-", " ")} para la devolución #${devolucionId}?`))
                 void enviarDevolucion(`devoluciones/${devolucionId}/${gestionDevolucion}`,
-                  gestionDevolucion === "reintegros" ? { importeEfectivo: importeReintegro }
+                  gestionDevolucion === "reintegros" ? { importeEfectivo: importeReintegro,
+                    ...(detalle.esDemostracion ? { referenciaExterna: constanciaProducto, constanciaExaminada: true } : {}) }
                     : gestionDevolucion === "cierre-sin-reintegro" ? { motivo: motivoGestion.trim() }
                       : { cantidadApta, cantidadDanada, ...(motivoGestion.trim() ? { motivo: motivoGestion.trim() } : {}) },
-                  clave, () => { setClaveGestion(""); setImporteReintegro(""); setMotivoGestion(""); setCantidadApta(0); setCantidadDanada(0); }); }}
+                  clave, () => { setClaveGestion(""); setImporteReintegro(""); setConstanciaProducto("");
+                    setConstanciaExaminada(false); setMotivoGestion(""); setCantidadApta(0); setCantidadDanada(0); }); }}
             className="border border-black px-4 py-2 text-sm font-bold disabled:opacity-40">Registrar acción</button>
         </div>}
         {mensajeDevolucion && <p role="status" className="mt-3 text-sm">{mensajeDevolucion}</p>}
