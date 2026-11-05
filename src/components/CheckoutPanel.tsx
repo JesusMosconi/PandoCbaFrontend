@@ -41,7 +41,7 @@ export default function CheckoutPanel() {
   const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const [camposInvalidos, setCamposInvalidos] = useState<Record<string, string>>({});
-  const [ordenCreada, setOrdenCreada] = useState<{ id: number; estado: string; venceEn: string } | null>(null);
+  const [ordenCreada, setOrdenCreada] = useState<{ id: number; estado: string; venceEn: string; esDemostracion?: boolean } | null>(null);
 
   async function solicitarConLimite<T>(ruta: string, body: object, limiteMs = 10_000): Promise<T> {
     const control = new AbortController();
@@ -149,7 +149,7 @@ export default function CheckoutPanel() {
     setMensaje("");
     claveIntento.current ??= crypto.randomUUID();
     try {
-      const orden = await solicitarConLimite<{ id: number; estado: string; venceEn: string }>(
+      const orden = await solicitarConLimite<{ id: number; estado: string; venceEn: string; esDemostracion?: boolean }>(
         "/api/checkout/confirmacion", { ...entregaActual(), huellaResumen: resumen.huellaResumen,
           aceptaPrecioVigente: true, claveConfirmacion: claveIntento.current }, 20_000,
       );
@@ -176,7 +176,7 @@ export default function CheckoutPanel() {
       <h1 className="font-epilogue text-3xl font-bold uppercase">Tu orden fue creada correctamente</h1>
       <p className="mt-4">Tu número de pedido es #{ordenCreada.id}.</p>
       <p className="mt-2">Estado: {tituloEstadoOrden(ordenCreada.estado)}. Reservamos tus productos hasta el {fechaReserva.format(new Date(ordenCreada.venceEn))}.</p>
-      <Link href="/cuenta" className="mt-6 inline-block underline">Ver mis órdenes</Link>
+      <Link href={`/cuenta?orden=${ordenCreada.id}`} className="mt-6 inline-block underline">{ordenCreada.esDemostracion ? "Ver la orden y continuar al pago de prueba" : "Ver mi orden"}</Link>
     </section>;
   }
 
@@ -194,10 +194,15 @@ export default function CheckoutPanel() {
     {tipoEntrega === "envio" && <div className="mt-6 grid gap-4 sm:grid-cols-2">
       {campos.map(({ clave, etiqueta, tipo }) => <label key={clave} className="block text-sm font-semibold">
         {etiqueta}
-        <input type={tipo ?? "text"} value={datosEnvio[clave]} required
+        {clave === "ciudad" && resumen?.pagosOnlineDisponibles ? <select value={datosEnvio.ciudad} required
+          onChange={(event) => { versionResumen.current += 1; setDatosEnvio((actual) => ({ ...actual, ciudad: event.target.value })); setResumenVigente(false); setAceptaPrecio(false); claveIntento.current = null; }}
+          className="mt-1 block w-full border border-gray-500 p-3" aria-invalid={Boolean(camposInvalidos.ciudad)}>
+          <option value="">Seleccioná la localidad</option><option value="Córdoba Capital">Córdoba Capital</option>
+          <option value="Otra localidad">Otra localidad (sin envío)</option>
+        </select> : <input type={tipo ?? "text"} value={datosEnvio[clave]} required
           aria-invalid={Boolean(camposInvalidos[clave])} aria-describedby={camposInvalidos[clave] ? `error-${clave}` : undefined}
           onChange={(event) => { versionResumen.current += 1; setDatosEnvio((actual) => ({ ...actual, [clave]: event.target.value })); setResumenVigente(false); setCargando(false); setAceptaPrecio(false); claveIntento.current = null; }}
-          className="mt-1 block w-full border border-gray-500 p-3 focus:outline-2 focus:outline-black" />
+          className="mt-1 block w-full border border-gray-500 p-3 focus:outline-2 focus:outline-black" />}
         {camposInvalidos[clave] && <span id={`error-${clave}`} className="mt-1 block text-red-700">{camposInvalidos[clave]}</span>}
       </label>)}
     </div>}
@@ -221,12 +226,14 @@ export default function CheckoutPanel() {
       <div className="border-t border-black pt-4">
         {resumen.lineas.some((linea) => linea.cambioPrecio) && <p className="mb-2 flex justify-between text-amber-800"><span>Subtotal anterior del carrito</span><span>{moneda.format(Number(resumen.subtotalCarrito))}</span></p>}
         <p className="flex justify-between"><span>Subtotal de productos</span><strong>{moneda.format(Number(resumen.subtotalProductos))}</strong></p>
-        {tipoEntrega === "envio" ? <><p className="mt-2">Envío: costo a coordinar</p><p className="mt-2 font-semibold">Total final pendiente de coordinación.</p></>
+        {resumen.esDemostracion && <p className="mt-3 font-semibold text-amber-800">Demostración: no se cobra dinero real.</p>}
+        {resumen.estadoCostoEnvio === "cotizado" ? <><p className="mt-2">Envío Córdoba Capital: {moneda.format(Number(resumen.costoEnvio))}</p><p className="mt-2 font-semibold">Total: {moneda.format(Number(resumen.totalFinal))}</p></>
+          : tipoEntrega === "envio" ? <><p className="mt-2">Envío: {resumen.pagosOnlineDisponibles ? "solo Córdoba Capital; pendiente de validar la dirección" : "costo a coordinar"}</p><p className="mt-2 font-semibold">Total final pendiente.</p></>
           : <p className="mt-2 flex justify-between"><span>Total</span><strong>{moneda.format(Number(resumen.totalFinal))}</strong></p>}
       </div>
       <p className="mt-4 text-sm text-gray-700">Si confirmás, los productos quedarán reservados por un día (24 horas). La fecha de vencimiento aparecerá en la orden creada.</p>
       <label className="mt-6 flex items-start gap-2"><input type="checkbox" checked={aceptaPrecio} disabled={!resumenVigente} onChange={(event) => setAceptaPrecio(event.target.checked)} /> Acepto explícitamente los precios vigentes y el importe conocido de esta compra.</label>
-      {!resumen.puedeConfirmar && <p className="mt-4 text-red-700">Corregí los ítems indicados en el carrito para continuar.</p>}
+      {!resumen.puedeConfirmar && <p className="mt-4 text-red-700">{resumen.camposInvalidos?.[0]?.mensaje ?? "Corregí los ítems indicados en el carrito para continuar."}</p>}
       <button type="button" onClick={() => void confirmar()} disabled={!resumenVigente || !resumen.puedeConfirmar || !aceptaPrecio || enviando}
         className="mt-6 w-full bg-black px-5 py-4 font-bold uppercase text-white disabled:opacity-40">{enviando ? "Confirmando..." : "Confirmar orden"}</button>
     </div>}
