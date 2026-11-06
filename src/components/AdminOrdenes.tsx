@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiError, apiFetchAdmin } from "@/lib/api";
 import type { OrdenAdmin, PaginaOrdenesAdmin } from "@/types/orden";
 import { tituloEstadoOrden } from "@/lib/estado-orden";
@@ -36,6 +36,19 @@ export default function AdminOrdenes() {
   const [claveGestion, setClaveGestion] = useState("");
   const [mensajeDevolucion, setMensajeDevolucion] = useState("");
   const { confirmar, dialogo } = useConfirmacion();
+  const tituloDetalleRef = useRef<HTMLHeadingElement>(null);
+  const posicionListaRef = useRef(0);
+
+  useEffect(() => {
+    if (!detalle?.id) return;
+    tituloDetalleRef.current?.scrollIntoView({ block: "start" });
+    tituloDetalleRef.current?.focus({ preventScroll: true });
+  }, [detalle?.id]);
+
+  function volver() {
+    setDetalle(null);
+    window.setTimeout(() => window.scrollTo({ top: posicionListaRef.current }), 0);
+  }
 
   async function cargar(numero = 1) {
     setCargando(true);
@@ -53,6 +66,7 @@ export default function AdminOrdenes() {
   }
 
   async function abrir(id: number) {
+    if (!detalle) posicionListaRef.current = window.scrollY;
     setError("");
     try {
       setDetalle(await apiFetchAdmin<OrdenAdmin>(`/ordenes/${id}`));
@@ -143,6 +157,8 @@ export default function AdminOrdenes() {
       : detalle?.estado === "lista_para_retiro" || detalle?.estado === "enviada" ? ["entregada"] : [];
 
   return <section className="space-y-7">
+    {error && <div role="alert" className="border border-red-700 p-4 text-red-700"><p>{error}</p><button type="button" onClick={() => void cargar(pagina?.pagina ?? 1)} className="mt-2 underline">Actualizar lista</button></div>}
+    {!detalle && <>
     <div className="flex flex-wrap items-end gap-4 border-y border-black py-5">
       <label className="text-sm font-semibold">Estado
         <select value={filtroEstado} onChange={(event) => setFiltroEstado(event.target.value)} className="mt-1 block border border-black p-2">
@@ -159,7 +175,6 @@ export default function AdminOrdenes() {
     </div>
 
     {cargando && <p role="status">Cargando órdenes...</p>}
-    {error && <div role="alert" className="border border-red-700 p-4 text-red-700"><p>{error}</p><button type="button" onClick={() => void cargar(pagina?.pagina ?? 1)} className="mt-2 underline">Reintentar</button></div>}
     {pagina?.ordenes.length === 0 && !error && !cargando && <p>No hay órdenes para estos filtros.</p>}
     {!!pagina?.ordenes.length && <div className="divide-y divide-gray-300 border-y border-black">
       {pagina.ordenes.map((orden) => <div key={orden.id} className="flex flex-wrap items-center justify-between gap-4 py-4">
@@ -169,8 +184,9 @@ export default function AdminOrdenes() {
     </div>}
     {pagina && pagina.paginas > 1 && <div className="flex items-center gap-4 text-sm"><button type="button" disabled={pagina.pagina <= 1} onClick={() => void cargar(pagina.pagina - 1)} className="underline disabled:opacity-40">Anterior</button><span>Página {pagina.pagina} de {pagina.paginas}</span><button type="button" disabled={pagina.pagina >= pagina.paginas} onClick={() => void cargar(pagina.pagina + 1)} className="underline disabled:opacity-40">Siguiente</button></div>}
 
+    </>}
     {detalle && <article className="border-2 border-black bg-white p-5" aria-labelledby="orden-admin-detalle">
-      <div className="flex justify-between gap-4"><h2 id="orden-admin-detalle" className="font-epilogue text-2xl font-bold uppercase">Orden #{detalle.id}</h2><button type="button" onClick={() => setDetalle(null)} className="underline">Cerrar</button></div>
+      <div className="flex justify-between gap-4"><h2 id="orden-admin-detalle" ref={tituloDetalleRef} tabIndex={-1} className="scroll-mt-24 font-epilogue text-2xl font-bold uppercase">Orden #{detalle.id}</h2><button type="button" onClick={volver} className="underline">Volver a órdenes</button></div>
       <p className="mt-2">Cliente: {detalle.cliente.nombre} {detalle.cliente.apellido} · {detalle.cliente.email}</p>
       <p className="mt-2">Estado: {detalle.estadoVisible.replaceAll("_", " ")}</p>
       {detalle.estadoVisible === "reserva_vencida_en_proceso" && <p className="mt-2 text-amber-800">Reserva vencida; cancelación en proceso.</p>}

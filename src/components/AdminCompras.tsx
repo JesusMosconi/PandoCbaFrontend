@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ApiError, apiFetchAdmin } from "@/lib/api";
 import type { BorradorCompraEntrada, CompraResumen, GastoCompraEntrada, LineaCompraEntrada, PaginaCompras } from "@/types/compra";
 import type { PaginaProveedores } from "@/types/proveedor";
@@ -35,6 +35,18 @@ export default function AdminCompras({ productoIdInicial }: { productoIdInicial?
   const [motivoGestion, setMotivoGestion] = useState("");
   const [claveGestion, setClaveGestion] = useState("");
   const [mensajeGestion, setMensajeGestion] = useState("");
+  const [vistaIngreso, setVistaIngreso] = useState<"lista" | "ingreso">("lista");
+  const tituloIngresoRef = useRef<HTMLHeadingElement>(null);
+  const posicionListaRef = useRef(0);
+  function volverIngresos() {
+    setVistaIngreso("lista");
+    window.setTimeout(() => window.scrollTo({ top: posicionListaRef.current }), 0);
+  }
+  useEffect(() => {
+    if (vistaIngreso !== "ingreso") return;
+    tituloIngresoRef.current?.scrollIntoView({ block: "start" });
+    tituloIngresoRef.current?.focus({ preventScroll: true });
+  }, [vistaIngreso, borradorId]);
 
   async function cargar() {
     setCargando(true);
@@ -122,6 +134,7 @@ export default function AdminCompras({ productoIdInicial }: { productoIdInicial?
   }
 
   async function abrir(id: number) {
+    if (vistaIngreso === "lista") posicionListaRef.current = window.scrollY;
     setError("");
     try {
       const ingreso = await apiFetchAdmin<CompraResumen>(`/compras/${id}`);
@@ -137,6 +150,7 @@ export default function AdminCompras({ productoIdInicial }: { productoIdInicial?
       setClaveOperacion("");
       setPartidaId(ingreso.partidas?.[0]?.id ?? 0);
       setValorGestion(""); setMotivoGestion(""); setClaveGestion(""); setMensajeGestion("");
+      setVistaIngreso("ingreso");
     } catch (causa) {
       setError(causa instanceof ApiError ? causa.message : "No pudimos abrir el ingreso. Reintentá.");
     }
@@ -196,7 +210,7 @@ export default function AdminCompras({ productoIdInicial }: { productoIdInicial?
     {error && <div role="alert" className="border border-red-700 bg-red-50 p-4 text-sm text-red-800">
       {error} <button type="button" className="ml-3 underline" onClick={cargar}>Reintentar carga</button>
     </div>}
-    {cargando ? <p role="status">Cargando compras…</p> : <section className="border border-black bg-white p-5">
+    {vistaIngreso === "lista" && (cargando ? <p role="status">Cargando compras…</p> : <section className="border border-black bg-white p-5">
       <h2 className="font-epilogue text-xl font-black uppercase">Ingresos</h2>
       {lista?.datos.length === 0 ? <p className="mt-3 text-sm text-neutral-600">Aún no hay ingresos.</p> : <ul className="mt-3 divide-y divide-neutral-200">
         {lista?.datos.map((ingreso) => <li key={ingreso.id}>
@@ -206,13 +220,16 @@ export default function AdminCompras({ productoIdInicial }: { productoIdInicial?
         </li>)}
       </ul>}
       <button type="button" className="mt-3 text-sm underline" onClick={() => {
+        posicionListaRef.current = window.scrollY;
         setBorradorId(null); setEntrada({ proveedorId: 0, fechaCompra: "", fechaRecepcion: "", lineas: [nuevaLinea()], gastosAdicionales: [] });
         setRevision(null); setClaveOperacion("");
+        setVistaIngreso("ingreso");
       }}>Nuevo ingreso</button>
-    </section>}
+    </section>)}
 
+    {vistaIngreso === "ingreso" && <><button type="button" className="text-sm font-semibold underline" onClick={volverIngresos}>Volver a ingresos</button>
     <section className="border border-black bg-white p-5">
-      <h2 className="font-epilogue text-xl font-black uppercase">{borradorId ? `Ingreso #${borradorId}` : "Nuevo ingreso"}</h2>
+      <h2 ref={tituloIngresoRef} tabIndex={-1} className="scroll-mt-24 font-epilogue text-xl font-black uppercase">{borradorId ? `Ingreso #${borradorId}` : "Nuevo ingreso"}</h2>
       <form onSubmit={guardar} className="mt-5 space-y-5">
         <label className="block text-sm font-semibold">Proveedor
           <select className={`${campo} mt-1`} value={entrada.proveedorId || ""} onChange={(e) => cambiarEntrada({ proveedorId: Number(e.target.value) })} required disabled={confirmado}>
@@ -306,7 +323,7 @@ export default function AdminCompras({ productoIdInicial }: { productoIdInicial?
         {!!revision.correcciones?.length && <ul className="mt-4 text-sm">{revision.correcciones.map((item) => <li key={item.id}>Corrección #{item.id} · {item.campo} · {item.valorAnterior} → {item.valorNuevo} · {item.motivo}</li>)}</ul>}
         {!!revision.devolucionesProveedor?.length && <ul className="mt-4 text-sm">{revision.devolucionesProveedor.map((item) => <li key={item.id}>Devolución #{item.id} · partida #{item.partidaId} · {item.cantidad} unidades · {item.motivo}</li>)}</ul>}
       </section>}
-    </section>
+    </section></>}
 
     <section className="border border-black bg-white p-5">
       <h2 className="font-epilogue text-xl font-black uppercase">Crear ficha desde Compras</h2>

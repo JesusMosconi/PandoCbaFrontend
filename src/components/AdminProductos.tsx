@@ -577,7 +577,7 @@ export default function AdminProductos({
         <MensajeEstado mensaje={mensajes.productos} />
 
         {formVisible && (
-          <form ref={formularioRef} onSubmit={guardarProducto} className="mt-6 scroll-mt-6 grid gap-4 border-2 border-black bg-white p-5 sm:grid-cols-2 lg:grid-cols-4">
+          <form ref={formularioRef} onSubmit={guardarProducto} className="mt-6 scroll-mt-24 grid gap-4 border-2 border-black bg-white p-5 sm:grid-cols-2 lg:grid-cols-4">
             <h3 className="font-epilogue text-lg font-bold uppercase sm:col-span-2 lg:col-span-4">
               {editandoId ? `Editar producto #${editandoId}` : "Nuevo producto"}
             </h3>

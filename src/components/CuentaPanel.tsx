@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError, apiFetchInterna } from "@/lib/api";
 import type { Usuario } from "@/types/usuario";
@@ -18,6 +18,21 @@ export default function CuentaPanel({ usuarioInicial, mostrarOrdenes }: CuentaPa
   const [mensajePassword, setMensajePassword] = useState("");
   const [mensajeSesion, setMensajeSesion] = useState("");
   const [cerrandoSesion, setCerrandoSesion] = useState(false);
+  const [vista, setVista] = useState<"inicio" | "datos" | "password" | "ordenes">("inicio");
+
+  useEffect(() => {
+    if (!mostrarOrdenes || !new URLSearchParams(window.location.search).has("orden")) return;
+    const temporizador = window.setTimeout(() => setVista("ordenes"), 0);
+    return () => window.clearTimeout(temporizador);
+  }, [mostrarOrdenes]);
+
+  function volverInicio() {
+    const parametros = new URLSearchParams(window.location.search);
+    parametros.delete("orden");
+    const consulta = parametros.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${consulta ? `?${consulta}` : ""}`);
+    setVista("inicio");
+  }
 
   async function actualizarPerfil(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -35,6 +50,7 @@ export default function CuentaPanel({ usuarioInicial, mostrarOrdenes }: CuentaPa
       });
       setUsuario(perfil);
       setMensajePerfil("Tus datos fueron actualizados.");
+      setVista("inicio");
     } catch (error) {
       setMensajePerfil(error instanceof ApiError ? error.message : "No pudimos actualizar tus datos.");
     }
@@ -57,6 +73,7 @@ export default function CuentaPanel({ usuarioInicial, mostrarOrdenes }: CuentaPa
       });
       formulario.reset();
       setMensajePassword(respuesta.message);
+      setVista("inicio");
     } catch (error) {
       setMensajePassword(error instanceof ApiError ? error.message : "No pudimos actualizar tu contraseña.");
     }
@@ -93,7 +110,13 @@ export default function CuentaPanel({ usuarioInicial, mostrarOrdenes }: CuentaPa
             {mensajeSesion && <p className="mt-2 text-sm text-red-700" role="alert">{mensajeSesion}</p>}
           </div>
         </div>
-        <div className="mt-10 grid gap-12 lg:grid-cols-2">
+        {vista === "inicio" && <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {mostrarOrdenes && <button type="button" onClick={() => setVista("ordenes")} className="border border-black p-6 text-left font-epilogue text-lg font-bold uppercase hover:bg-neutral-100">Mis órdenes</button>}
+          <button type="button" onClick={() => setVista("datos")} className="border border-black p-6 text-left font-epilogue text-lg font-bold uppercase hover:bg-neutral-100">Editar mis datos</button>
+          <button type="button" onClick={() => setVista("password")} className="border border-black p-6 text-left font-epilogue text-lg font-bold uppercase hover:bg-neutral-100">Cambiar contraseña</button>
+        </div>}
+        {vista !== "inicio" && <button type="button" onClick={volverInicio} className="mt-8 text-sm font-semibold underline">Volver a mi cuenta</button>}
+        {vista === "datos" && <div className="mt-8 max-w-xl">
           <form onSubmit={actualizarPerfil} className="space-y-5">
             <h2 className="font-epilogue text-2xl font-bold uppercase tracking-[-0.03em]">Tus datos</h2>
             <Input etiqueta="Nombre" nombre="nombre" valor={usuario.nombre} />
@@ -103,7 +126,9 @@ export default function CuentaPanel({ usuarioInicial, mostrarOrdenes }: CuentaPa
             {mensajePerfil && <p className="text-sm text-[#4C4546]" role="status">{mensajePerfil}</p>}
             <button className="bg-black px-5 py-4 font-manrope text-xs font-bold uppercase tracking-[0.16em] text-white">Guardar cambios</button>
           </form>
-          <form onSubmit={cambiarPassword} className="space-y-5 border-t border-black pt-10 lg:border-l lg:border-t-0 lg:pl-12 lg:pt-0">
+        </div>}
+        {vista === "password" && <div className="mt-8 max-w-xl">
+          <form onSubmit={cambiarPassword} className="space-y-5">
             <h2 className="font-epilogue text-2xl font-bold uppercase tracking-[-0.03em]">contraseña</h2>
             <Input etiqueta="contraseña actual" nombre="passwordActual" tipo="password" />
             <Input etiqueta="Nueva contraseña" nombre="passwordNuevo" tipo="password" minimo={6} />
@@ -111,8 +136,9 @@ export default function CuentaPanel({ usuarioInicial, mostrarOrdenes }: CuentaPa
             {mensajePassword && <p className="text-sm text-[#4C4546]" role="status">{mensajePassword}</p>}
             <button className="border border-black px-5 py-4 font-manrope text-xs font-bold uppercase tracking-[0.16em]">Actualizar contraseña</button>
           </form>
-        </div>
-        {mostrarOrdenes && <MisOrdenes />}
+        </div>}
+        {vista === "inicio" && (mensajePerfil || mensajePassword) && <p className="mt-6 text-sm" role="status">{mensajePerfil || mensajePassword}</p>}
+        {mostrarOrdenes && vista === "ordenes" && <MisOrdenes />}
       </div>
     </section>
   );
