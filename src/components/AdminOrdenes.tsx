@@ -89,6 +89,19 @@ export default function AdminOrdenes({ estadoInicial = "" }: { estadoInicial?: s
   const filaRef = useRef<HTMLLIElement>(null);
   const tituloRef = useRef<HTMLHeadingElement>(null);
   const { confirmar, dialogo } = useConfirmacion();
+  const tituloDetalleRef = useRef<HTMLHeadingElement>(null);
+  const posicionListaRef = useRef(0);
+
+  useEffect(() => {
+    if (!detalle?.id) return;
+    tituloDetalleRef.current?.scrollIntoView({ block: "start" });
+    tituloDetalleRef.current?.focus({ preventScroll: true });
+  }, [detalle?.id]);
+
+  function volver() {
+    setDetalle(null);
+    window.setTimeout(() => window.scrollTo({ top: posicionListaRef.current }), 0);
+  }
 
   const filtros = { estado: filtroEstado, tipoEntrega: filtroEntrega, canal: filtroCanal, metodoPago: filtroMedio };
   const hayFiltros = Object.values(filtros).some(Boolean);

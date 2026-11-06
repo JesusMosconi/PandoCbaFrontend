@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiFetchAdmin, ApiError } from "@/lib/api";
 import { normalizarRespuestaUsuarios } from "@/lib/usuarios";
 import type { RolUsuario, UsuarioAdmin, UsuariosAdminRespuesta } from "@/types/usuario";
@@ -30,6 +30,15 @@ export default function AdminClientes({ respuestaInicial }: Props) {
   const [cargando, setCargando] = useState(false);
   const [mensaje, setMensaje] = useState<Mensaje | null>(null);
   const { confirmar, dialogo } = useConfirmacion();
+  const cierreRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!detalle) return;
+    const anterior = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    cierreRef.current?.focus();
+    const alTeclado = (evento: KeyboardEvent) => { if (evento.key === "Escape") setDetalle(null); };
+    document.addEventListener("keydown", alTeclado);
+    return () => { document.removeEventListener("keydown", alTeclado); anterior?.focus(); };
+  }, [detalle]);
 
   useEffect(() => {
     const parametros = new URLSearchParams({ pagina: String(pagina), limite: "20", orden, direccion });
@@ -103,7 +112,7 @@ export default function AdminClientes({ respuestaInicial }: Props) {
         {cargando ? <p className="p-6 text-sm">Cargando clientes...</p> : <table className="w-full min-w-[760px] text-left text-sm"><thead className="border-b-2 border-black bg-black text-xs uppercase tracking-wider text-white"><tr><th className="p-3">ID</th><th className="p-3">Cliente</th><th className="p-3">Email</th><th className="p-3">Rol</th><th className="p-3">Estado</th><th className="p-3">Registro</th><th className="p-3">Pedidos</th><th className="p-3">Acciones</th></tr></thead><tbody>{respuesta.usuarios.map((usuario) => <tr key={usuario.id} className="border-b border-neutral-200"><td className="p-3">{usuario.id}</td><td className="p-3 font-bold">{usuario.nombre} {usuario.apellido}</td><td className="p-3">{usuario.email}</td><td className="p-3"><select className="border border-black bg-white px-2 py-1 text-xs" value={usuario.rol} onChange={(event) => cambiarRol(usuario, event.target.value as RolUsuario)} aria-label={`Rol de ${usuario.email}`}><option value="cliente">Cliente</option><option value="vendedor">Vendedor</option><option value="admin">Admin</option></select></td><td className="p-3 uppercase">{usuario.activo ? "Activo" : "Inactivo"}</td><td className="p-3">{fecha(usuario.fechaCreado)}</td><td className="p-3">{usuario._count?.ordenes ?? 0}</td><td className="p-3"><div className="flex gap-2"><button className="border border-black px-2 py-1 text-xs font-bold uppercase" onClick={() => verDetalle(usuario)}>Ver</button><button className="border border-black px-2 py-1 text-xs font-bold uppercase" onClick={() => cambiarEstado(usuario)}>{usuario.activo ? "Desactivar" : "Activar"}</button></div></td></tr>)}</tbody></table>}
       </div>
       <div className="flex items-center justify-between py-5 text-sm"><span>{respuesta.total} usuarios</span><div className="flex items-center gap-3"><button className="border border-black px-3 py-2 disabled:opacity-40" disabled={pagina <= 1} onClick={() => setPagina((actual) => actual - 1)}>Anterior</button><span>{pagina} / {Math.max(respuesta.paginas, 1)}</span><button className="border border-black px-3 py-2 disabled:opacity-40" disabled={pagina >= respuesta.paginas} onClick={() => setPagina((actual) => actual + 1)}>Siguiente</button></div></div>
-      {detalle && <div className="mt-4 border-2 border-black bg-white p-6"><div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-widest text-neutral-500">Detalle de cliente</p><h2 className="mt-2 font-epilogue text-3xl font-black uppercase">{detalle.nombre} {detalle.apellido}</h2></div><button className="border border-black px-3 py-2 text-xs font-bold uppercase" onClick={() => setDetalle(null)}>Cerrar</button></div><dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2"><div><dt className="font-bold uppercase text-neutral-500">Email</dt><dd>{detalle.email}</dd></div><div><dt className="font-bold uppercase text-neutral-500">Teléfono</dt><dd>{detalle.telefono || "No informado"}</dd></div><div><dt className="font-bold uppercase text-neutral-500">Rol</dt><dd>{detalle.rol}</dd></div><div><dt className="font-bold uppercase text-neutral-500">Estado</dt><dd>{detalle.activo ? "Activo" : "Inactivo"}</dd></div><div><dt className="font-bold uppercase text-neutral-500">Registro</dt><dd>{fecha(detalle.fechaCreado)}</dd></div><div><dt className="font-bold uppercase text-neutral-500">Pedidos</dt><dd>{detalle._count?.ordenes ?? 0}</dd></div><div><dt className="font-bold uppercase text-neutral-500">Favoritos</dt><dd>{detalle._count?.favoritos ?? 0}</dd></div></dl></div>}
+      {detalle && <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) setDetalle(null); }}><div role="dialog" aria-modal="true" aria-labelledby="detalle-cliente" className="max-h-[90vh] w-full max-w-2xl overflow-y-auto border-2 border-black bg-white p-6"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-widest text-neutral-500">Detalle de cliente</p><h2 id="detalle-cliente" className="mt-2 font-epilogue text-3xl font-black uppercase">{detalle.nombre} {detalle.apellido}</h2></div><button ref={cierreRef} type="button" className="border border-black px-3 py-2 text-xs font-bold uppercase" onClick={() => setDetalle(null)}>Cerrar</button></div><dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2"><div><dt className="font-bold uppercase text-neutral-500">Email</dt><dd>{detalle.email}</dd></div><div><dt className="font-bold uppercase text-neutral-500">Teléfono</dt><dd>{detalle.telefono || "No informado"}</dd></div><div><dt className="font-bold uppercase text-neutral-500">Rol</dt><dd>{detalle.rol}</dd></div><div><dt className="font-bold uppercase text-neutral-500">Estado</dt><dd>{detalle.activo ? "Activo" : "Inactivo"}</dd></div><div><dt className="font-bold uppercase text-neutral-500">Registro</dt><dd>{fecha(detalle.fechaCreado)}</dd></div><div><dt className="font-bold uppercase text-neutral-500">Pedidos</dt><dd>{detalle._count?.ordenes ?? 0}</dd></div><div><dt className="font-bold uppercase text-neutral-500">Favoritos</dt><dd>{detalle._count?.favoritos ?? 0}</dd></div></dl></div></div>}
       {dialogo}
     </section>
   );

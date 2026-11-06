@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetchAdmin } from "@/lib/api";
 import { useConfirmacion } from "@/components/useConfirmacion";
 import type { DropAdmin, MarcaInicio } from "@/types/drop";
@@ -37,6 +37,12 @@ export default function AdminDrops() {
   const [error, setError] = useState("");
   const [aviso, setAviso] = useState("");
   const { confirmar, dialogo } = useConfirmacion();
+  const formularioRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (!editando) return;
+    formularioRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+    formularioRef.current?.focus({ preventScroll: true });
+  }, [editando]);
 
   const cargar = useCallback(async () => {
     const [listado, configuracion] = await Promise.all([
@@ -129,7 +135,7 @@ export default function AdminDrops() {
     {aviso && <p role="status" className="border border-green-700 bg-green-50 p-4 text-green-800">{aviso}</p>}
 
     <section className="border border-black bg-white p-6">
-      <h2 className="font-epilogue text-2xl font-bold uppercase">{editando ? `Editar drop #${editando}` : "Nuevo drop"}</h2>
+      <h2 ref={formularioRef} tabIndex={-1} className="scroll-mt-24 font-epilogue text-2xl font-bold uppercase">{editando ? `Editar drop #${editando}` : "Nuevo drop"}</h2>
       <p className="mt-2 text-sm text-neutral-600">Horario de lanzamiento y fin: {zona}. Podés guardar un borrador sin fecha y programarlo después.</p>
       <form onSubmit={guardarDrop} className="mt-6 grid gap-4 md:grid-cols-2">
         <label className="text-sm">Nombre<input required maxLength={200} value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className="mt-1 w-full border border-black p-3" /></label>

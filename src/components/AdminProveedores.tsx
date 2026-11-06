@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ApiError, apiFetchAdmin } from "@/lib/api";
 import type { PaginaProveedores, Proveedor, ProveedorDetalle } from "@/types/proveedor";
 
@@ -16,6 +16,21 @@ export default function AdminProveedores() {
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(true);
   const [ocupado, setOcupado] = useState(false);
+  const [vista, setVista] = useState<"lista" | "ficha" | "nuevo" | "editar" | "actividad">("lista");
+  const tituloRef = useRef<HTMLHeadingElement>(null);
+  const posicionListaRef = useRef(0);
+
+  function volverListado() {
+    setVista("lista");
+    setError("");
+    window.setTimeout(() => window.scrollTo({ top: posicionListaRef.current }), 0);
+  }
+
+  useEffect(() => {
+    if (vista === "lista") return;
+    tituloRef.current?.scrollIntoView({ block: "start" });
+    tituloRef.current?.focus({ preventScroll: true });
+  }, [vista, detalle?.id]);
 
   async function cargar(numero = 1) {
     setCargando(true);
@@ -30,6 +45,7 @@ export default function AdminProveedores() {
   }
 
   async function abrir(id: number) {
+    if (vista === "lista") posicionListaRef.current = window.scrollY;
     setError("");
     try {
       const proveedor = await apiFetchAdmin<ProveedorDetalle>(`/proveedores/${id}`);
@@ -38,6 +54,7 @@ export default function AdminProveedores() {
       setContacto(proveedor.contacto ?? "");
       setObservaciones(proveedor.observaciones ?? "");
       setMotivo("");
+      setVista("ficha");
     } catch (causa) {
       setError(causa instanceof ApiError ? causa.message : "No pudimos cargar el proveedor. Reintentá.");
     }
@@ -62,6 +79,7 @@ export default function AdminProveedores() {
       });
       await cargar(pagina?.pagina ?? 1);
       await abrir(proveedor.id);
+      setVista("ficha");
     } catch (causa) {
       setError(causa instanceof ApiError ? causa.message : "No pudimos guardar el proveedor. Reintentá.");
     } finally {
@@ -79,6 +97,7 @@ export default function AdminProveedores() {
       });
       await cargar(pagina?.pagina ?? 1);
       await abrir(detalle.id);
+      setVista("ficha");
     } catch (causa) {
       setError(causa instanceof ApiError ? causa.message : "No pudimos cambiar el estado. Consultá el historial y reintentá.");
     } finally {
@@ -86,11 +105,13 @@ export default function AdminProveedores() {
     }
   }
 
-  return <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+  return <div className="space-y-6">
+    {vista !== "lista" && <button type="button" className="text-sm font-semibold underline" onClick={volverListado}>Volver al listado</button>}
+    {vista === "lista" &&
     <section className="border border-black bg-white p-5" aria-labelledby="lista-proveedores">
       <div className="flex items-center justify-between gap-3">
         <h2 id="lista-proveedores" className="font-epilogue text-xl font-black uppercase">Listado</h2>
-        <button type="button" className="text-sm underline" onClick={() => { setDetalle(null); setNombre(""); setContacto(""); setObservaciones(""); setMotivo(""); }}>Nuevo</button>
+        <button type="button" className="border border-black px-4 py-2 text-sm font-semibold" onClick={() => { posicionListaRef.current = window.scrollY; setDetalle(null); setNombre(""); setContacto(""); setObservaciones(""); setMotivo(""); setVista("nuevo"); }}>Nuevo proveedor</button>
       </div>
       {cargando && <p role="status" className="mt-4 text-sm">Cargando proveedores…</p>}
       {!cargando && pagina?.datos.length === 0 && <p className="mt-4 text-sm text-neutral-600">Aún no hay proveedores.</p>}
@@ -107,10 +128,17 @@ export default function AdminProveedores() {
         <span>Página {pagina.pagina}</span>
         <button type="button" className="underline disabled:opacity-40" disabled={pagina.pagina * pagina.limite >= pagina.total || cargando} onClick={() => cargar(pagina.pagina + 1)}>Siguiente</button>
       </div>}
-    </section>
+    </section>}
 
-    <section className="border border-black bg-white p-5" aria-labelledby="ficha-proveedor">
-      <h2 id="ficha-proveedor" className="font-epilogue text-xl font-black uppercase">{detalle ? "Ficha del proveedor" : "Nuevo proveedor"}</h2>
+    {vista !== "lista" && <section className="border border-black bg-white p-5" aria-labelledby="ficha-proveedor">
+      <h2 id="ficha-proveedor" ref={tituloRef} tabIndex={-1} className="scroll-mt-24 font-epilogue text-xl font-black uppercase">{vista === "nuevo" ? "Nuevo proveedor" : `Proveedor: ${detalle?.nombre ?? ""}`}</h2>
+      {detalle && vista === "ficha" && <div className="mt-5 space-y-4 text-sm">
+        <p><strong>Estado:</strong> {detalle.activo ? "Activo" : "Inactivo"}</p>
+        <p><strong>Contacto:</strong> {detalle.contacto || "No informado"}</p>
+        <p><strong>Observaciones:</strong> {detalle.observaciones || "Sin observaciones"}</p>
+        <div className="flex flex-wrap gap-3"><button type="button" onClick={() => setVista("editar")} className="border border-black px-4 py-2 font-semibold">Editar</button><button type="button" onClick={() => setVista("actividad")} className="border border-black px-4 py-2 font-semibold">{detalle.activo ? "Desactivar" : "Reactivar"}</button></div>
+      </div>}
+      {(vista === "nuevo" || vista === "editar") && <>
       <form className="mt-5 space-y-4" onSubmit={guardar}>
         <label className="block text-sm font-semibold">Nombre
           <input className={`${campo} mt-1`} value={nombre} onChange={(e) => setNombre(e.target.value)} required maxLength={200} />
@@ -122,8 +150,10 @@ export default function AdminProveedores() {
           <textarea className={`${campo} mt-1`} value={observaciones} onChange={(e) => setObservaciones(e.target.value)} maxLength={1000} rows={3} />
         </label>
         <button disabled={ocupado} className="bg-black px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">{ocupado ? "Guardando…" : "Guardar"}</button>
+        {vista === "editar" && <button type="button" className="ml-3 underline" onClick={() => { if (detalle) { setNombre(detalle.nombre); setContacto(detalle.contacto ?? ""); setObservaciones(detalle.observaciones ?? ""); } setVista("ficha"); }}>Cancelar edición</button>}
       </form>
-      {detalle && <div className="mt-8 border-t pt-5">
+      </>}
+      {detalle && vista === "actividad" && <div className="mt-8 border-t pt-5">
         <h3 className="font-semibold">{detalle.activo ? "Desactivar" : "Reactivar"}</h3>
         <label className="mt-3 block text-sm">Motivo
           <textarea className={`${campo} mt-1`} value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={500} rows={2} />
@@ -131,14 +161,15 @@ export default function AdminProveedores() {
         <button type="button" disabled={ocupado || !motivo.trim()} onClick={cambiarActividad} className="mt-3 border border-black px-4 py-2 text-sm font-semibold disabled:opacity-50">
           {detalle.activo ? "Desactivar proveedor" : "Reactivar proveedor"}
         </button>
-        <h3 className="mt-8 font-semibold">Historial de actividad</h3>
+      </div>}
+      {detalle && <div className="mt-8 border-t pt-5"><h3 className="font-semibold">Historial de actividad</h3>
         {detalle.eventos.length === 0 ? <p className="mt-2 text-sm text-neutral-600">Sin eventos.</p> : <ul className="mt-2 space-y-2 text-sm">
           {detalle.eventos.map((evento) => <li key={evento.id} className="border-l-2 border-black pl-3">
             <span className="font-semibold capitalize">{evento.tipo}</span> · {new Date(evento.fecha).toLocaleString("es-AR")}<br />{evento.motivo}
           </li>)}
         </ul>}
       </div>}
-    </section>
+    </section>}
     {error && <div role="alert" className="border border-red-700 bg-red-50 p-4 text-sm text-red-800 lg:col-span-2">{error} <button type="button" className="ml-3 underline" onClick={() => cargar(pagina?.pagina ?? 1)}>Reintentar lista</button></div>}
   </div>;
 }
