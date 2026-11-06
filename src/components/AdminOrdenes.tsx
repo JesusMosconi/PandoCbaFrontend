@@ -175,6 +175,15 @@ export default function AdminOrdenes() {
       <p className="mt-2">Estado: {detalle.estadoVisible.replaceAll("_", " ")}</p>
       {detalle.estadoVisible === "reserva_vencida_en_proceso" && <p className="mt-2 text-amber-800">Reserva vencida; cancelación en proceso.</p>}
       <p className="mt-2">Entrega: {detalle.tipoEntrega}. Reserva hasta: {fecha(detalle.venceEn)}</p>
+      {detalle.tipoEntrega === "envio" && <section className="mt-4 border border-black p-4" aria-label="Datos de envío">
+        <h3 className="font-bold">Datos de envío</h3>
+        {detalle.datosEnvio ? <div className="mt-2 space-y-1 text-sm">
+          <p>Dirección: {detalle.datosEnvio.direccion}</p>
+          <p>Ciudad: {detalle.datosEnvio.ciudad} · Código postal: {detalle.datosEnvio.codPostal}</p>
+          <p>Teléfono: {detalle.datosEnvio.telefono}</p>
+          <p>Correo: {detalle.datosEnvio.email}</p>
+        </div> : <p className="mt-2 text-sm">No hay datos de envío registrados.</p>}
+      </section>}
       {detalle.canceladaEn && <p className="mt-2">Cancelada: {fecha(detalle.canceladaEn)}</p>}
       <div className="mt-5 divide-y divide-gray-200 border-y">
         {detalle.detalles.map((linea) => <p key={linea.posicion} className="flex justify-between gap-3 py-3"><span>{linea.nombreProducto} · {linea.talle} / {linea.color} × {linea.cantidad}</span><span>{moneda.format(Number(linea.importeLinea))}</span></p>)}
