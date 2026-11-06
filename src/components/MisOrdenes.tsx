@@ -5,6 +5,7 @@ import { ApiError, apiFetchInterna } from "@/lib/api";
 import type { Orden } from "@/types/orden";
 import { tituloEstadoOrden } from "@/lib/estado-orden";
 import { useConfirmacion } from "@/components/useConfirmacion";
+import PagoOrden from "@/components/PagoOrden";
 
 const moneda = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
 const fecha = (valor: string | null) => valor ? new Date(valor).toLocaleString("es-AR") : "No disponible";
@@ -81,7 +82,12 @@ export default function MisOrdenes() {
     const control = new AbortController();
     const temporizador = window.setTimeout(() => control.abort(), 10_000);
     apiFetchInterna<Orden[]>("/api/ordenes", { signal: control.signal, cache: "no-store" })
-      .then((lista) => { if (activo) { setOrdenes(lista); setError(""); } })
+      .then((lista) => { if (activo) {
+        setOrdenes(lista); setError("");
+        const id = Number(new URLSearchParams(window.location.search).get("orden"));
+        const seleccionada = lista.find((orden) => orden.id === id);
+        if (seleccionada) setDetalle(seleccionada);
+      } })
       .catch((causa) => {
         if (activo) setError(causa instanceof ApiError ? causa.message : "La consulta tardó demasiado o falló. Reintentá.");
       })
@@ -119,7 +125,7 @@ export default function MisOrdenes() {
     {ordenes?.length === 0 && !error && <p className="mt-5">Todavía no tenés órdenes.</p>}
     {!!ordenes?.length && <div className="mt-5 divide-y divide-gray-300 border-y border-black">
       {ordenes.map((orden) => <div key={orden.id} className="flex flex-wrap items-center justify-between gap-4 py-4">
-        <div><p className="font-semibold">Orden #{orden.id}</p><p className="text-sm">{tituloEstadoOrden(orden.estadoVisible)}</p><p className="text-sm text-gray-600">{fecha(orden.creadaEn)}</p></div>
+        <div><p className="font-semibold">Orden #{orden.id}{orden.esDemostracion ? " · Demostración" : ""}</p><p className="text-sm">{tituloEstadoOrden(orden.estadoVisible)}</p><p className="text-sm text-gray-600">{fecha(orden.creadaEn)}</p></div>
         <button type="button" onClick={() => void abrir(orden.id)} className="border border-black px-4 py-2 text-sm font-semibold">Ver detalle</button>
       </div>)}
     </div>}
@@ -136,10 +142,12 @@ export default function MisOrdenes() {
       </div>
       <p className="mt-4 flex justify-between"><span>Subtotal de productos</span><strong>{moneda.format(Number(detalle.subtotalProductos))}</strong></p>
       {detalle.estadoCostoEnvio === "sin_cotizar" ? <><p className="mt-2">Envío: costo a coordinar</p><p className="mt-2 font-semibold">Total final pendiente.</p></>
+        : detalle.estadoCostoEnvio === "cotizado" ? <><p className="mt-2">Envío: {moneda.format(Number(detalle.costoEnvio))}</p><p className="mt-2 font-semibold">Total: {moneda.format(Number(detalle.totalFinal))}</p></>
         : detalle.estadoCostoEnvio === "no_aplica" ? <p className="mt-2 flex justify-between"><span>Total</span><strong>{moneda.format(Number(detalle.totalFinal))}</strong></p>
           : <p className="mt-2">Importes heredados: total registrado {detalle.totalFinal === null ? "no disponible" : moneda.format(Number(detalle.totalFinal))}.</p>}
       {detalle.envioCoordinado && <p className="mt-3">Envío coordinado externamente el {fecha(detalle.envioCoordinadoEn)}. El costo aún no está cotizado aquí.</p>}
       {detalle.devolucion === "pendiente_de_gestionar" && <p className="mt-3">Devolución pendiente de gestionar.</p>}
+      {detalle.esDemostracion && <PagoOrden key={detalle.id} ordenId={detalle.id} vigente={detalle.estadoVisible === "pendiente_pago"} />}
       {detalle.puedeCancelar && <button type="button" disabled={cancelando} onClick={() => void cancelar()} className="mt-6 border border-red-700 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-40">{cancelando ? "Cancelando..." : "Cancelar orden"}</button>}
     </article>}
     {dialogo}
