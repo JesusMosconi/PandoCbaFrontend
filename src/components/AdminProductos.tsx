@@ -811,6 +811,7 @@ function FragmentoProducto(props: FilaProps) {
       <td className="px-3 py-3">${producto.precio}</td><td className="px-3 py-3"><span className={badge(producto.activo)}>{producto.activo ? "S\u00ed" : "No"}</span></td>
       <td className="px-3 py-3"><span className={badge(producto.web)}>{producto.web ? "S\u00ed" : "No"}</span></td><td className="px-3 py-3"><span className={badge(producto.local)}>{producto.local ? "S\u00ed" : "No"}</span></td><td className="px-3 py-3 font-bold">{stockTotal}</td>
       <td className="px-3 py-3"><div className="flex flex-wrap gap-2">
+        <Link href={`/admin/productos/${producto.id}`} className="text-xs font-bold uppercase underline">Estadísticas</Link>
         <Link href={`/admin/compras?productoId=${producto.id}#informes`} className="text-xs font-bold uppercase underline">Historial</Link>
         <button type="button" onClick={props.onEditar} className="text-xs font-bold uppercase underline">Editar</button>
         <button type="button" disabled={props.procesando === `producto-${producto.id}`} onClick={props.onEliminar} className="text-xs font-bold uppercase text-red-700 underline disabled:opacity-50">Eliminar</button>
