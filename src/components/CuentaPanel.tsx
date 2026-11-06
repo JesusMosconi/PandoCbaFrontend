@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { ApiError, apiFetchInterna } from "@/lib/api";
 import type { Usuario } from "@/types/usuario";
 import MisOrdenes from "@/components/MisOrdenes";
@@ -105,8 +106,8 @@ export default function CuentaPanel({ usuarioInicial, mostrarOrdenes }: CuentaPa
           </form>
           <form onSubmit={cambiarPassword} className="space-y-5 border-t border-black pt-10 lg:border-l lg:border-t-0 lg:pl-12 lg:pt-0">
             <h2 className="font-epilogue text-2xl font-bold uppercase tracking-[-0.03em]">contraseña</h2>
-            <Input etiqueta="contraseña actual" nombre="passwordActual" tipo="password" />
-            <Input etiqueta="Nueva contraseña" nombre="passwordNuevo" tipo="password" minimo={6} />
+            <InputPassword etiqueta="Contraseña actual" nombre="passwordActual" autoComplete="current-password" />
+            <InputPassword etiqueta="Nueva contraseña" nombre="passwordNuevo" autoComplete="new-password" minimo={6} />
             <p className="text-xs leading-5 text-[#6B7280]">Usa una contraseña de al menos 6 caracteres.</p>
             {mensajePassword && <p className="text-sm text-[#4C4546]" role="status">{mensajePassword}</p>}
             <button className="border border-black px-5 py-4 font-manrope text-xs font-bold uppercase tracking-[0.16em]">Actualizar contraseña</button>
@@ -120,4 +121,20 @@ export default function CuentaPanel({ usuarioInicial, mostrarOrdenes }: CuentaPa
 
 function Input({ etiqueta, nombre, tipo = "text", valor, minimo }: { etiqueta: string; nombre: string; tipo?: string; valor?: string; minimo?: number }) {
   return <div><label htmlFor={nombre} className="mb-2 block font-manrope text-[10px] font-bold uppercase tracking-[0.14em] text-[#4B5563]">{etiqueta}</label><input id={nombre} name={nombre} type={tipo} defaultValue={valor} minLength={minimo} required className="w-full border border-black px-4 py-4 text-sm outline-none focus:ring-1 focus:ring-black" /></div>;
+}
+
+/** Campo de contraseña con botón para mostrarla u ocultarla (igual que en el login). */
+function InputPassword({ etiqueta, nombre, autoComplete, minimo }: { etiqueta: string; nombre: string; autoComplete: string; minimo?: number }) {
+  const [visible, setVisible] = useState(false);
+  return <div>
+    <label htmlFor={nombre} className="mb-2 block font-manrope text-[10px] font-bold uppercase tracking-[0.14em] text-[#4B5563]">{etiqueta}</label>
+    <div className="flex border border-black focus-within:ring-1 focus-within:ring-black">
+      <input id={nombre} name={nombre} type={visible ? "text" : "password"} minLength={minimo} autoComplete={autoComplete} required
+        className="min-w-0 flex-1 px-4 py-4 text-sm outline-none" />
+      <button type="button" onClick={() => setVisible(!visible)} className="px-4 text-[#4B5563] hover:text-black"
+        aria-label={visible ? `Ocultar ${etiqueta.toLowerCase()}` : `Mostrar ${etiqueta.toLowerCase()}`} aria-pressed={visible}>
+        {visible ? <EyeOff size={18} aria-hidden /> : <Eye size={18} aria-hidden />}
+      </button>
+    </div>
+  </div>;
 }
