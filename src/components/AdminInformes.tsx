@@ -37,6 +37,7 @@ export default function AdminInformes({ productoIdInicial, productos, variantes,
   const [productoId, setProductoId] = useState(productoIdInicial ?? 0);
   const [varianteId, setVarianteId] = useState(0);
   const [proveedorId, setProveedorId] = useState(0);
+  const [canal, setCanal] = useState<"" | "web" | "local">("");
   const [estado, setEstado] = useState<EstadoConsultaInforme>("vacio");
   const [resultado, setResultado] = useState<InformeComprasVentas | HistorialProducto | null>(null);
   const [comparacion, setComparacion] = useState<InformeComprasVentas | null>(null);
@@ -51,7 +52,7 @@ export default function AdminInformes({ productoIdInicial, productos, variantes,
     setEstado("cargando"); setError("");
     const filtros: FiltrosInforme = { desde, hasta, pagina, limite: 20,
       ...(productoId ? { productoId } : {}), ...(varianteId ? { varianteId } : {}),
-      ...(proveedorId ? { proveedorId } : {}) };
+      ...(proveedorId ? { proveedorId } : {}), ...(canal ? { canal } : {}) };
     const ruta = (valores: FiltrosInforme) => {
       const parametros = new URLSearchParams(Object.entries(valores).map(([clave, valor]) => [clave, String(valor)]));
       return productoId ? `/productos/${productoId}/historial?${parametros}` : `/informes/compras-ventas?${parametros}`;
@@ -91,6 +92,11 @@ export default function AdminInformes({ productoIdInicial, productos, variantes,
           <option value="">Todos</option>{proveedores.map((proveedor) => <option key={proveedor.id} value={proveedor.id}>{proveedor.nombre}</option>)}
         </select>
       </label>
+      <label className="text-sm">Canal
+        <select value={canal} onChange={(e) => setCanal(e.target.value as typeof canal)} className="mt-1 block w-full border border-black p-2">
+          <option value="">Todos (incluye compras e inventario)</option><option value="web">Web</option><option value="local">Local</option>
+        </select>
+      </label>
       <div className="grid grid-cols-2 gap-2">
         <label className="text-sm">Comparar desde<input type="date" value={compararDesde} onChange={(e) => setCompararDesde(e.target.value)} className="mt-1 block w-full border border-black p-2" /></label>
         <label className="text-sm">Comparar hasta<input type="date" value={compararHasta} onChange={(e) => setCompararHasta(e.target.value)} className="mt-1 block w-full border border-black p-2" /></label>
@@ -112,7 +118,7 @@ export default function AdminInformes({ productoIdInicial, productos, variantes,
       </div>}
       <h3 className="font-bold">Detalle de hechos</h3>
       <ul className="divide-y border-y text-sm">{resultado.datos.map((dato) => <li key={dato.id} className="py-2">
-        {mostrarFecha(dato.fecha)} · {dato.tipo.replaceAll("_", " ")}
+        {mostrarFecha(dato.fecha)} · {dato.tipo.replaceAll("_", " ")}{dato.canal ? ` (${dato.canal})` : ""}
         {dato.cantidad !== undefined ? ` · ${dato.cantidad} unidades` : ""}
         {dato.importeVentaAtribuido ? ` · venta ${moneda.format(Number(dato.importeVentaAtribuido))}` : ""}
         {dato.compras ? ` · compra ${moneda.format(Number(dato.compras))}` : ""}

@@ -5,11 +5,12 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ApiError, apiFetchInterna } from "@/lib/api";
 import type { Carrito } from "@/types/carrito";
+import type { RolUsuario } from "@/types/usuario";
 import { useConfirmacion } from "@/components/useConfirmacion";
 
 const moneda = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
 
-export default function CarritoPanel({ rol }: { rol: "cliente" | "admin" | null }) {
+export default function CarritoPanel({ rol }: { rol: RolUsuario | null }) {
   const [carrito, setCarrito] = useState<Carrito | null>(null);
   const [mensaje, setMensaje] = useState("");
   const [mensajesStock, setMensajesStock] = useState<Record<number, string>>({});

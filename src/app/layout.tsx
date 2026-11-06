@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Epilogue, Manrope } from "next/font/google";
 import Footer from "@/components/Footer";
+import ContenedorPrincipal from "@/components/ContenedorPrincipal";
 import Header from "@/components/Header";
 import { obtenerSesion } from "@/lib/session";
 import "./globals.css";
@@ -37,8 +38,8 @@ export default async function RootLayout({
       className={`${epilogue.variable} ${manrope.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Header sesionIniciada={Boolean(sesion)} esAdmin={esAdmin} />
-        <main className="mx-auto w-full max-w-[1280px] flex-1 pt-20">{children}</main>
+        <Header sesionIniciada={Boolean(sesion)} esAdmin={esAdmin} esVendedor={sesion?.rol === "vendedor"} />
+        <ContenedorPrincipal>{children}</ContenedorPrincipal>
         <Footer />
       </body>
     </html>

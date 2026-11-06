@@ -15,6 +15,7 @@ export interface Producto {
   precio: string;
   activo: boolean;
   web: boolean;
+  local: boolean;
   categoriaId: number;
   coleccionId: number | null;
   categoria: { id: number; nombre: string };

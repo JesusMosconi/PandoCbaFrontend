@@ -17,16 +17,19 @@ const navItems = [
 type HeaderProps = {
   sesionIniciada: boolean;
   esAdmin?: boolean;
+  esVendedor?: boolean;
 };
 
-export default function Header({ sesionIniciada, esAdmin = false }: HeaderProps) {
+export default function Header({ sesionIniciada, esAdmin = false, esVendedor = false }: HeaderProps) {
   const pathname = usePathname();
   const [search, setSearch] = useState("");
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [cantidadCarrito, setCantidadCarrito] = useState(0);
+  const accedePuntoVenta = esAdmin || esVendedor;
 
   useEffect(() => {
-    if (!sesionIniciada) return;
+    // El vendedor no compra en la tienda web: no tiene carrito.
+    if (!sesionIniciada || esVendedor) return;
 
     const cargarCantidadCarrito = () => {
       apiFetchInterna<Carrito>("/api/carrito")
@@ -42,10 +45,10 @@ export default function Header({ sesionIniciada, esAdmin = false }: HeaderProps)
       window.removeEventListener("carrito-actualizado", cargarCantidadCarrito);
       window.removeEventListener("sesion-cerrada", limpiarCantidadAlCerrarSesion);
     };
-  }, [pathname, sesionIniciada]);
+  }, [pathname, sesionIniciada, esVendedor]);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 h-20 border-b-2 border-black bg-white">
+    <header className="fixed inset-x-0 top-0 z-50 h-20 border-b-2 border-black bg-white print:hidden">
       <div className="flex h-full items-center justify-between px-5 sm:px-8">
         <Link href="/" className="flex items-center gap-3" aria-label="Pando CBA, inicio">
           <Image src="/logo-pando-cba.png" alt="" width={71} height={71} priority className="h-[71px] w-[71px] shrink-0 object-contain" />
@@ -79,6 +82,14 @@ export default function Header({ sesionIniciada, esAdmin = false }: HeaderProps)
               Admin
             </Link>
           )}
+          {accedePuntoVenta && (
+            <Link
+              href="/vendedor"
+              className="hidden border border-black px-3 py-2 font-manrope text-[10px] font-bold uppercase tracking-[0.2em] text-black sm:inline-flex"
+            >
+              Punto de venta
+            </Link>
+          )}
 
           <input
             value={search}
@@ -87,10 +98,12 @@ export default function Header({ sesionIniciada, esAdmin = false }: HeaderProps)
             aria-label="Buscar productos"
             className="hidden h-[34px] w-32 border border-black bg-transparent px-3 font-manrope text-[10px] font-bold uppercase tracking-widest text-gray-500 outline-none placeholder:text-gray-500 sm:block"
           />
-          <Link href={sesionIniciada ? "/carrito" : "/login"} aria-label={`Carrito${cantidadCarrito ? `, ${cantidadCarrito} productos` : ""}`} className="relative hidden text-black sm:block">
-            <ShoppingBag size={20} strokeWidth={1.8} />
-            {cantidadCarrito > 0 && <span className="absolute -right-3 -top-3 flex h-4 min-w-4 items-center justify-center bg-black px-1 font-manrope text-[9px] font-bold leading-none text-white">{cantidadCarrito}</span>}
-          </Link>
+          {!esVendedor && (
+            <Link href={sesionIniciada ? "/carrito" : "/login"} aria-label={`Carrito${cantidadCarrito ? `, ${cantidadCarrito} productos` : ""}`} className="relative hidden text-black sm:block">
+              <ShoppingBag size={20} strokeWidth={1.8} />
+              {cantidadCarrito > 0 && <span className="absolute -right-3 -top-3 flex h-4 min-w-4 items-center justify-center bg-black px-1 font-manrope text-[9px] font-bold leading-none text-white">{cantidadCarrito}</span>}
+            </Link>
+          )}
           <Link href={sesionIniciada ? "/cuenta" : "/login"} aria-label={sesionIniciada ? "Mi cuenta" : "Ingresar"} className="hidden text-black sm:block">
             <User size={20} strokeWidth={1.8} />
           </Link>
@@ -135,6 +148,15 @@ export default function Header({ sesionIniciada, esAdmin = false }: HeaderProps)
                 Admin
               </Link>
             )}
+            {accedePuntoVenta && (
+              <Link
+                href="/vendedor"
+                onClick={() => setMenuAbierto(false)}
+                className="border-b border-black py-4 font-epilogue text-sm font-bold uppercase tracking-widest text-black"
+              >
+                Punto de venta
+              </Link>
+            )}
             <Link
               href={sesionIniciada ? "/cuenta" : "/login"}
               onClick={() => setMenuAbierto(false)}
@@ -142,13 +164,15 @@ export default function Header({ sesionIniciada, esAdmin = false }: HeaderProps)
             >
               {sesionIniciada ? "Mi cuenta" : "Ingresar"}
             </Link>
-            <Link
-              href={sesionIniciada ? "/carrito" : "/login"}
-              onClick={() => setMenuAbierto(false)}
-              className="border-t border-black py-4 font-epilogue text-sm font-bold uppercase tracking-widest text-black"
-            >
-              Carrito{cantidadCarrito > 0 && ` (${cantidadCarrito})`}
-            </Link>
+            {!esVendedor && (
+              <Link
+                href={sesionIniciada ? "/carrito" : "/login"}
+                onClick={() => setMenuAbierto(false)}
+                className="border-t border-black py-4 font-epilogue text-sm font-bold uppercase tracking-widest text-black"
+              >
+                Carrito{cantidadCarrito > 0 && ` (${cantidadCarrito})`}
+              </Link>
+            )}
           </div>
         </nav>
       )}

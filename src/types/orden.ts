@@ -69,7 +69,7 @@ export interface DetalleOrden {
 
 export interface EventoOrden {
   fecha: string;
-  origen: "cliente" | "administracion" | "tarea" | "proveedor";
+  origen: "cliente" | "administracion" | "tarea" | "proveedor" | "local";
   actorUsuarioId: number | null;
   actorNombre?: string | null;
   estadoAnterior: EstadoOrden | null;
@@ -107,8 +107,20 @@ export interface Orden {
   datosEnvio?: DatosEnvioCheckout | null;
 }
 
-export interface OrdenAdmin extends Orden {
-  saldoMonetarioPendiente?: string;
+export type CanalVenta = "web" | "local";
+export type MetodoPago = "manual" | "efectivo" | "transferencia" | "debito" | "credito";
+
+export interface OrdenAdmin extends Omit<Orden, "usuarioId" | "tipoEntrega"> {
+  usuarioId: number | null;
+  tipoEntrega: TipoEntrega | "local";
+  canal: CanalVenta;
+  metodoPago: MetodoPago | string;
+  numeroComprobante: number | null;
+  nombreCliente: string | null;
+  telefonoCliente: string | null;
+  /** `null` en las ventas del local, que no se atribuyen a una persona. */
+  cliente: { id: number; nombre: string; apellido: string; email: string } | null;
+    saldoMonetarioPendiente?: string;
   intentosPago?: { id: number; estado: string; referenciaExterna: string | null;
     importe: string; creadoEn: string; ultimoChequeoEn: string | null }[];
   incidenciasPago?: { id: number; tipo: string; estado: string; referenciaExterna: string | null;
@@ -117,7 +129,6 @@ export interface OrdenAdmin extends Orden {
   reintegrosPago?: { id: number; concepto: string; importeDebido: string; importeReintegrado: string;
     estado: string; referenciaExterna: string | null; comprobadoEn: string | null;
     creadoEn: string; actorUsuarioId: number | null; motivo: string | null; metodo: string | null }[];
-  cliente: { id: number; nombre: string; apellido: string; email: string };
   eventos: EventoOrden[];
   motivoCancelacion: string | null;
   restituirStock: boolean | null;

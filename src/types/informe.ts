@@ -8,6 +8,8 @@ export interface FiltrosInforme {
   productoId?: number;
   varianteId?: number;
   proveedorId?: number;
+  /** Solo ventas, devoluciones y reintegros del canal indicado. */
+  canal?: "web" | "local";
   pagina?: number;
   limite?: number;
 }
@@ -22,6 +24,7 @@ export interface EventoInforme {
   proveedorId: number | null;
   ingresoId?: number;
   ordenId?: number;
+  canal?: "web" | "local";
   devolucionId?: number;
   partidaId?: number | null;
   fechaCompra?: string;
