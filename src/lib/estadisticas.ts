@@ -36,8 +36,15 @@ export function rangoPeriodo(periodo: PeriodoRapido, hoy = hoyBuenosAires()): { 
 export const fechaCorta = (fecha: string) => `${fecha.slice(8, 10)}/${fecha.slice(5, 7)}`;
 export const fechaLarga = (fecha: string) => fecha.split("-").reverse().join("/");
 
-const compacto = new Intl.NumberFormat("es-AR", { notation: "compact", maximumFractionDigits: 1 });
-export const dineroCompacto = (valor: number) => `$${compacto.format(valor)}`;
+const decimal = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 1 });
+
+/** «$10 k», «$7,5 k», «$1,2 M». Abreviatura propia: la de Intl mezcla «k» y «K». */
+export function dineroCompacto(valor: number): string {
+  const absoluto = Math.abs(valor);
+  if (absoluto >= 1_000_000) return `$${decimal.format(valor / 1_000_000)} M`;
+  if (absoluto >= 1_000) return `$${decimal.format(valor / 1_000)} k`;
+  return `$${decimal.format(valor)}`;
+}
 
 /** Precio regular vigente al cierre de cada día de Buenos Aires (fin del día a las 24 h, UTC−3). */
 export function precioPublicadoDelDia(precios: VigenciaPrecio[], fecha: string): number | null {

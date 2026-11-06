@@ -42,16 +42,16 @@ function TarjetaTarea({ tarea }: { tarea: Tarea }) {
   const { cantidad, titulo, ayuda, href, icono: Icono, urgente } = tarea;
   const activa = cantidad > 0;
   return <Link href={href}
-    className={`group flex flex-col justify-between border p-4 transition-colors ${activa
+    className={`group flex flex-col justify-between border p-3 transition-colors sm:p-4 ${activa
       ? `border-black bg-white hover:bg-neutral-50 ${urgente ? "border-l-[6px] border-l-red-700" : "border-l-[6px]"}`
       : "border-neutral-300 bg-neutral-50 text-neutral-500 hover:border-neutral-500"}`}>
     <div className="flex items-start justify-between gap-3">
-      <span className="flex items-center gap-2 text-sm font-bold">
+      <span className="flex items-center gap-2 text-xs font-bold sm:text-sm">
         <Icono className={`h-4 w-4 shrink-0 ${activa && urgente ? "text-red-700" : ""}`} aria-hidden />{titulo}
       </span>
-      <span className={`font-epilogue text-3xl font-black leading-none ${activa ? "text-black" : ""}`}>{cantidad}</span>
+      <span className={`font-epilogue text-2xl font-black leading-none sm:text-3xl ${activa ? "text-black" : ""}`}>{cantidad}</span>
     </div>
-    <p className="mt-3 text-xs leading-5">{activa ? ayuda : "Al día"}</p>
+    <p className={`mt-2 text-xs leading-5 sm:mt-3 ${activa ? "" : "hidden sm:block"}`}>{activa ? ayuda : "Al día"}</p>
     {activa && <span className="mt-2 flex items-center gap-1 text-xs font-bold uppercase tracking-[0.15em] text-black">
       Ver <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" aria-hidden />
     </span>}
@@ -103,11 +103,11 @@ export default function AdminPendientes() {
     </div>}
 
     {datos && <>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
         {lista.map((tarea) => <TarjetaTarea key={tarea.clave} tarea={tarea} />)}
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <Link href="/vendedor/caja" className={`flex items-start gap-3 border bg-white p-4 text-sm hover:bg-neutral-50 ${datos.caja.abierta && datos.caja.deJornadaAnterior ? "border-black border-l-[6px] border-l-red-700" : "border-black"}`}>
           <Store className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <span>
@@ -119,7 +119,7 @@ export default function AdminPendientes() {
           </span>
         </Link>
 
-        <div className="border border-black bg-white p-4 text-sm lg:col-span-2">
+        <div className="min-w-0 border border-black bg-white p-4 text-sm lg:col-span-2">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <p className="font-bold">Stock crítico</p>
             <Link href="/admin/productos" className="text-xs font-semibold underline">Ir a productos</Link>
@@ -130,7 +130,7 @@ export default function AdminPendientes() {
               <p className="mt-1 text-neutral-600">
                 {datos.stock.agotadas} {datos.stock.agotadas === 1 ? "variante agotada" : "variantes agotadas"} y {datos.stock.bajas} con {datos.stock.umbralBajo} unidades o menos (disponible = stock menos reservas).
               </p>
-              <ul className="mt-2 grid gap-x-6 sm:grid-cols-2">
+              <ul className="mt-2 grid grid-cols-1 gap-x-6 sm:grid-cols-2">
                 {datos.stock.variantes.map((variante) => <li key={variante.varianteId} className="flex items-center justify-between gap-3 border-b border-neutral-200 py-1.5">
                   <Link href={`/admin/productos/${variante.productoId}`} className="min-w-0 truncate hover:underline">
                     {variante.producto} <span className="text-neutral-500">· {variante.talle} · {variante.color}</span>

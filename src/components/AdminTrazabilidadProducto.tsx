@@ -113,27 +113,27 @@ export default function AdminTrazabilidadProducto({ productoId, desdeInicial, ha
           detalle={`Precio promedio cobrado ${datos.totales.precioPromedio ? formatearDinero(datos.totales.precioPromedio) : "—"}`} />
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <div>
+      <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="min-w-0">
           <GraficoPrecios serie={serie} />
           <TablaGrafico columnas={["Día", "Precio publicado", "Promedio cobrado"]}
             filas={serie.map((dia) => [fechaLarga(dia.fecha), formatearDinero(dia.publicado), formatearDinero(dia.cobrado)])} />
         </div>
-        <div>
+        <div className="min-w-0">
           <GraficoUnidadesDiarias serie={serie} />
           <TablaGrafico columnas={["Día", "Unidades netas", "Importe neto"]}
             filas={datos.serieDiaria.map((dia) => [fechaLarga(dia.fecha), dia.unidadesNetas, formatearDinero(dia.importeNeto)])} />
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-3">
-        <div className="border border-black bg-white p-5 text-sm">
+      <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="min-w-0 border border-black bg-white p-5 text-sm">
           <h2 className="font-epilogue text-xl font-black uppercase">Por canal</h2>
           <ul className="mt-3 divide-y">{datos.canales.map((item) => <li key={item.canal} className="flex justify-between py-2">
             <span>{nombreCanal(item.canal)}</span><span>{item.unidadesNetas} u. · {formatearDinero(item.importeNeto)}</span>
           </li>)}</ul>
         </div>
-        <div className="border border-black bg-white p-5 text-sm lg:col-span-2">
+        <div className="min-w-0 border border-black bg-white p-5 text-sm lg:col-span-2">
           <h2 className="font-epilogue text-xl font-black uppercase">Por variante</h2>
           {datos.variantes.length === 0 ? <p className="mt-3">El producto no tiene variantes.</p> : <div className="mt-3 overflow-x-auto">
             <table className="w-full min-w-[480px]">

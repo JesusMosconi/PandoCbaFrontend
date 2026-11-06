@@ -86,14 +86,16 @@ export function GraficoPrecios({ serie }: { serie: PuntoPrecio[] }) {
     <LineChart data={serie} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
       <CartesianGrid vertical={false} stroke={GRILLA} />
       <XAxis dataKey="fecha" tickFormatter={fechaCorta} tick={eje} tickLine={false} axisLine={{ stroke: GRILLA }} minTickGap={16} />
-      <YAxis tickFormatter={dineroCompacto} tick={eje} tickLine={false} axisLine={false} width={64} domain={["auto", "auto"]} />
+      {/* Desde cero: con un precio estable, un eje ajustado repetiría la misma etiqueta. */}
+      <YAxis tickFormatter={dineroCompacto} tick={eje} tickLine={false} axisLine={false} width={64} domain={[0, "auto"]} />
       <Tooltip {...tooltip} formatter={dinero} labelFormatter={(fecha) => fechaLarga(String(fecha))}
         cursor={{ stroke: TEXTO_SECUNDARIO, strokeDasharray: "3 3" }} />
       <Legend {...leyenda} />
       <Line type="stepAfter" dataKey="publicado" name="Precio publicado" stroke={COLOR_PRINCIPAL} strokeWidth={2}
         dot={false} activeDot={{ r: 4, stroke: "#fff", strokeWidth: 2 }} connectNulls={false} />
-      <Line type="linear" dataKey="cobrado" name="Promedio cobrado" stroke={COLOR_SECUNDARIO} strokeWidth={2}
-        dot={{ r: 4, stroke: "#fff", strokeWidth: 2, fill: COLOR_SECUNDARIO }} activeDot={{ r: 4 }} connectNulls />
+      {/* Solo puntos: el promedio cobrado existe en los días con ventas y no debe tapar el precio publicado. */}
+      <Line type="linear" dataKey="cobrado" name="Promedio cobrado" stroke={COLOR_SECUNDARIO} strokeWidth={0} legendType="circle"
+        dot={{ r: 5, stroke: "#fff", strokeWidth: 2, fill: COLOR_SECUNDARIO }} activeDot={{ r: 5 }} />
     </LineChart>
   </Marco>;
 }

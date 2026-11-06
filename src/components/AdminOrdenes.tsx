@@ -86,6 +86,7 @@ export default function AdminOrdenes({ estadoInicial = "" }: { estadoInicial?: s
   const [mensajeDevolucion, setMensajeDevolucion] = useState("");
   const [mensajeAccion, setMensajeAccion] = useState("");
   const detalleRef = useRef<HTMLElement>(null);
+  const filaRef = useRef<HTMLLIElement>(null);
   const tituloRef = useRef<HTMLHeadingElement>(null);
   const { confirmar, dialogo } = useConfirmacion();
 
@@ -203,7 +204,8 @@ export default function AdminOrdenes({ estadoInicial = "" }: { estadoInicial?: s
   useEffect(() => {
     if (!detalleId) return;
     const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    detalleRef.current?.scrollIntoView({ behavior: reducido ? "auto" : "smooth", block: "start" });
+    // Se desplaza a la fila (no solo al detalle) para que se vea qué orden se abrió y su botón «Ocultar».
+    (filaRef.current ?? detalleRef.current)?.scrollIntoView({ behavior: reducido ? "auto" : "smooth", block: "start" });
     tituloRef.current?.focus({ preventScroll: true });
   }, [detalleId]);
 
@@ -520,7 +522,7 @@ export default function AdminOrdenes({ estadoInicial = "" }: { estadoInicial?: s
       {pagina.ordenes.map((orden) => {
         const abierta = detalle?.id === orden.id;
         const total = orden.totalFinal ?? orden.subtotalProductos;
-        return <li key={orden.id}>
+        return <li key={orden.id} ref={abierta ? filaRef : undefined} className="scroll-mt-24">
           <div className={`flex flex-wrap items-center justify-between gap-4 border-2 p-4 ${abierta ? "border-black bg-neutral-50" : "border-neutral-300 bg-white hover:border-black"}`}>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
