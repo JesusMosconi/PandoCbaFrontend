@@ -125,7 +125,7 @@ export default function MisOrdenes() {
     {ordenes?.length === 0 && !error && <p className="mt-5">Todavía no tenés órdenes.</p>}
     {!!ordenes?.length && <div className="mt-5 divide-y divide-gray-300 border-y border-black">
       {ordenes.map((orden) => <div key={orden.id} className="flex flex-wrap items-center justify-between gap-4 py-4">
-        <div><p className="font-semibold">Orden #{orden.id}{orden.esDemostracion ? " · Demostración" : ""}</p><p className="text-sm">{tituloEstadoOrden(orden.estadoVisible)}</p><p className="text-sm text-gray-600">{fecha(orden.creadaEn)}</p></div>
+        <div><p className="font-semibold">Orden #{orden.id}</p><p className="text-sm">{tituloEstadoOrden(orden.estadoVisible)}</p><p className="text-sm text-gray-600">{fecha(orden.creadaEn)}</p></div>
         <button type="button" onClick={() => void abrir(orden.id)} className="border border-black px-4 py-2 text-sm font-semibold">Ver detalle</button>
       </div>)}
     </div>}

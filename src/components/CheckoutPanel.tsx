@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { ApiError, apiFetchInterna } from "@/lib/api";
 import type { DatosEnvioCheckout, EntradaEntrega, ResumenCheckout, TipoEntrega } from "@/types/orden";
 import { tituloEstadoOrden } from "@/lib/estado-orden";
+import PagoOrden from "@/components/PagoOrden";
 
 const moneda = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
 const fechaReserva = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -176,7 +177,8 @@ export default function CheckoutPanel() {
       <h1 className="font-epilogue text-3xl font-bold uppercase">Tu orden fue creada correctamente</h1>
       <p className="mt-4">Tu número de pedido es #{ordenCreada.id}.</p>
       <p className="mt-2">Estado: {tituloEstadoOrden(ordenCreada.estado)}. Reservamos tus productos hasta el {fechaReserva.format(new Date(ordenCreada.venceEn))}.</p>
-      <Link href={`/cuenta?orden=${ordenCreada.id}`} className="mt-6 inline-block underline">{ordenCreada.esDemostracion ? "Ver la orden y continuar al pago de prueba" : "Ver mi orden"}</Link>
+      {ordenCreada.esDemostracion && <PagoOrden ordenId={ordenCreada.id} vigente={ordenCreada.estado === "pendiente_pago"} />}
+      <Link href={`/cuenta?orden=${ordenCreada.id}`} className="mt-6 inline-block underline">Ver mi orden</Link>
     </section>;
   }
 
@@ -207,11 +209,10 @@ export default function CheckoutPanel() {
       </label>)}
     </div>}
 
-    <button type="button" onClick={() => void consultarResumen(entregaActual())} disabled={cargando}
-      className="mt-6 border border-black px-5 py-3 text-sm font-bold disabled:opacity-40">Actualizar resumen</button>
-
     {cargando && <p className="mt-6" role="status">Cargando resumen...</p>}
     {mensaje && <p ref={mensajeRef} tabIndex={-1} className="mt-6 text-red-700 outline-offset-2 focus:outline-2" role="alert">{mensaje}</p>}
+    {mensaje && !cargando && !resumenVigente && <button type="button" onClick={() => void consultarResumen(entregaActual())}
+      className="mt-3 border border-black px-5 py-3 text-sm font-bold">Reintentar resumen</button>}
     {resumen && <div className="mt-8 border-t-2 border-black pt-5">
       <h2 className="font-epilogue text-xl font-bold uppercase">Productos y precios</h2>
       {!resumenVigente && <p className="mt-3 text-amber-800" role="status">El resumen se está actualizando para esta entrega. Completá los datos de envío si corresponde; todavía no podés confirmar.</p>}
@@ -226,7 +227,6 @@ export default function CheckoutPanel() {
       <div className="border-t border-black pt-4">
         {resumen.lineas.some((linea) => linea.cambioPrecio) && <p className="mb-2 flex justify-between text-amber-800"><span>Subtotal anterior del carrito</span><span>{moneda.format(Number(resumen.subtotalCarrito))}</span></p>}
         <p className="flex justify-between"><span>Subtotal de productos</span><strong>{moneda.format(Number(resumen.subtotalProductos))}</strong></p>
-        {resumen.esDemostracion && <p className="mt-3 font-semibold text-amber-800">Demostración: no se cobra dinero real.</p>}
         {resumen.estadoCostoEnvio === "cotizado" ? <><p className="mt-2">Envío Córdoba Capital: {moneda.format(Number(resumen.costoEnvio))}</p><p className="mt-2 font-semibold">Total: {moneda.format(Number(resumen.totalFinal))}</p></>
           : tipoEntrega === "envio" ? <><p className="mt-2">Envío: {resumen.pagosOnlineDisponibles ? "solo Córdoba Capital; pendiente de validar la dirección" : "costo a coordinar"}</p><p className="mt-2 font-semibold">Total final pendiente.</p></>
           : <p className="mt-2 flex justify-between"><span>Total</span><strong>{moneda.format(Number(resumen.totalFinal))}</strong></p>}
