@@ -9,10 +9,10 @@ import PagoOrden from "@/components/PagoOrden";
 
 const moneda = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
 const fechaReserva = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" });
-const vacios: DatosEnvioCheckout = { direccion: "", ciudad: "", codPostal: "", telefono: "", email: "" };
+const ciudadEnvio = "Córdoba Capital";
+const vacios: DatosEnvioCheckout = { direccion: "", ciudad: ciudadEnvio, codPostal: "", telefono: "", email: "" };
 const campos: { clave: keyof DatosEnvioCheckout; etiqueta: string; tipo?: string }[] = [
   { clave: "direccion", etiqueta: "Dirección" },
-  { clave: "ciudad", etiqueta: "Ciudad" },
   { clave: "codPostal", etiqueta: "Código postal" },
   { clave: "telefono", etiqueta: "Teléfono", tipo: "tel" },
   { clave: "email", etiqueta: "Correo electrónico", tipo: "email" },
@@ -193,20 +193,19 @@ export default function CheckoutPanel() {
       </div>
     </fieldset>
 
-    {tipoEntrega === "envio" && <div className="mt-6 grid gap-4 sm:grid-cols-2">
+    {tipoEntrega === "envio" && <div className="mt-6">
+      <p className="text-sm font-semibold">Ciudad: {ciudadEnvio}</p>
+      <p className="mt-2 text-sm text-gray-700">Solo realizamos envíos dentro de Córdoba Capital. Un administrador verificará la dirección ingresada. Si está fuera de Córdoba Capital, el pedido se cancelará o se coordinará contigo la opción de retiro.</p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
       {campos.map(({ clave, etiqueta, tipo }) => <label key={clave} className="block text-sm font-semibold">
         {etiqueta}
-        {clave === "ciudad" && resumen?.pagosOnlineDisponibles ? <select value={datosEnvio.ciudad} required
-          onChange={(event) => { versionResumen.current += 1; setDatosEnvio((actual) => ({ ...actual, ciudad: event.target.value })); setResumenVigente(false); setAceptaPrecio(false); claveIntento.current = null; }}
-          className="mt-1 block w-full border border-gray-500 p-3" aria-invalid={Boolean(camposInvalidos.ciudad)}>
-          <option value="">Seleccioná la localidad</option><option value="Córdoba Capital">Córdoba Capital</option>
-          <option value="Otra localidad">Otra localidad (sin envío)</option>
-        </select> : <input type={tipo ?? "text"} value={datosEnvio[clave]} required
+        <input type={tipo ?? "text"} value={datosEnvio[clave]} required
           aria-invalid={Boolean(camposInvalidos[clave])} aria-describedby={camposInvalidos[clave] ? `error-${clave}` : undefined}
           onChange={(event) => { versionResumen.current += 1; setDatosEnvio((actual) => ({ ...actual, [clave]: event.target.value })); setResumenVigente(false); setCargando(false); setAceptaPrecio(false); claveIntento.current = null; }}
-          className="mt-1 block w-full border border-gray-500 p-3 focus:outline-2 focus:outline-black" />}
+          className="mt-1 block w-full border border-gray-500 p-3 focus:outline-2 focus:outline-black" />
         {camposInvalidos[clave] && <span id={`error-${clave}`} className="mt-1 block text-red-700">{camposInvalidos[clave]}</span>}
       </label>)}
+      </div>
     </div>}
 
     {cargando && <p className="mt-6" role="status">Cargando resumen...</p>}
